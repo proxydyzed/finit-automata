@@ -76,23 +76,23 @@ function question3() {
   console.log("-- end --");
 }
 
-// {
-//   const fa = question2();
-//   const recognizer = new Recognizer(fa);
-//   // console.log(fa);
-//   console.log(recognizer.accepts("("));    // false
-//   console.log(recognizer.accepts(")"));    // false
-//   console.log(recognizer.accepts("()()")); // true
-//   console.log("-- end --");
-// }
+{
+  const fa = question2();
+  const recognizer = new Recognizer(fa);
+  // console.log(fa);
+  console.log(recognizer.accepts("("));    // false
+  console.log(recognizer.accepts(")"));    // false
+  console.log(recognizer.accepts("()()")); // true
+  console.log("-- end --");
+}
 
 
-// {
-//   const fa = question3();
-//   const recognizer = new Recognizer(fa);
-//   // console.log(fa);
-//   console.log(recognizer.accepts("{ this comment does not work")); // false
-//   console.log(recognizer.accepts("neither does } this"));          // false
-//   console.log(recognizer.accepts("{ this one does work }"));       // true
-//   console.log("-- end --");
-// }
+{
+  const fa = question3();
+  const recognizer = new Recognizer(fa);
+  // console.log(fa);
+  console.log(recognizer.accepts("{ this comment does not work")); // false
+  console.log(recognizer.accepts("neither does } this"));          // false
+  console.log(recognizer.accepts("{ this one does work }"));       // true
+  console.log("-- end --");
+}

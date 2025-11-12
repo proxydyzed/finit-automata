@@ -9,10 +9,10 @@ export class FiniteAutomata {
 
   // JavaScript engine type-inference shenaniguns
   constructor() {
-    const map = new Map([["", this.start]]);
-
     this.start = Symbol("start");
     this.states = new Set([this.start, ErrorState]);
+    
+    const map = new Map([["", this.start]]);
     this.mappings = new Map([[this.start, map]]);
 
     this.alphabets = new Set([["", -1]]);
