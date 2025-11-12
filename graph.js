@@ -38,6 +38,7 @@ export class StateGraph {
       
       state = Symbol(String(fa.states.size - 1));
       fa.states.add(state);
+
       // make sure the new state has a corresponding mapping
       fa.mappings.set(state, new Map());
       map.set(alpha, state);
@@ -50,6 +51,7 @@ export class StateGraph {
   appendVertex(name) {
     const state = Symbol(String(name));
     this.fa.states.add(state);
+
     // make sure the new state has a corresponding mapping
     this.fa.mappings.set(state, new Map());
     return new StateGraph(this.fa, state);
