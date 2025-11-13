@@ -12,12 +12,7 @@ stateToTagMap.set(root.appendString("while"), Symbol("while"));
 stateToTagMap.set(root.appendString("."),     Symbol("period"));
 
 {
-  const node = root.appendVertex("space");
-  root.addEdge(" ", node.start);
-  node.addEdge(" ", node.start);
-  node.accept();
-
-  stateToTagMap.set(node.start, Symbol("space"));
+  root.addEdge(" ", root.start);
 }
 
 {
@@ -75,13 +70,9 @@ console.assert(recognizer.accepts("2101"));
 console.assert(recognizer.accepts("new"));
 console.assert(!recognizer.accepts("new."));
 
-// TODO:
-// somehow convey to the recognizer to ignore spaces
 const tokenizer = new TokenRecognizer(fa, input);
 console.log(tok(tokenizer.next())); // number
-console.log(tok(tokenizer.next())); // space
 console.log(tok(tokenizer.next())); // "new"
-console.log(tok(tokenizer.next())); // space
 console.log(tok(tokenizer.next())); // "while"
 console.log(tok(tokenizer.next())); // period
 console.log(tok(tokenizer.next())); // "not"
