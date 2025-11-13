@@ -11,6 +11,18 @@ stateToTagMap.set(root.appendString("not"),   Symbol("not"));
 stateToTagMap.set(root.appendString("while"), Symbol("while"));
 stateToTagMap.set(root.appendString("."),     Symbol("period"));
 
+// TODO:
+// invent complementary charecter and add comments
+// {
+//   const node1 = root.appendVertex("maybe-comment");
+//   const node2 = root.appendVertex("definitely-comment");
+//   root.addEdge("/", node1.start);
+//   node1.accept();
+//   node1.addEdge("/", node2.start);
+//   node2.addEdge(???) // consume till '\n'
+//   node2.addEdge("\n", root.start);
+// }
+
 {
   root.addEdge(" ", root.start);
   root.addEdge("\n", root.start);
