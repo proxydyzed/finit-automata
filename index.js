@@ -1,6 +1,10 @@
-import { FiniteAutomata, ErrorState } from "./fa.js";
-import { StateGraph } from "./graph.js";
-import { ExhaustiveRecognizer, TokenRecognizer } from "./recognizer.js";
+import {
+  FiniteAutomata,
+  ErrorState,
+  StateGraph,
+  ExhaustiveRecognizer,
+  TokenRecognizer,
+} from "./dst/export.js";
 
 const fa = new FiniteAutomata();
 const root = new StateGraph(fa, fa.start);
