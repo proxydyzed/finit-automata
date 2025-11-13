@@ -38,6 +38,11 @@ export class ExhaustiveRecognizer {
   }
 };
 
+// token recognizer
+// splits the input string into tokens.
+// matches a specific part of the source
+// and returns a matching token every call
+// to <TokenRecognizer>.next().
 export class TokenRecognizer {
   fa;
   index;
@@ -65,24 +70,33 @@ export class TokenRecognizer {
 
       state = this.fa.delta(state, alpha);
 
-      if (state === ErrorState) {
-        if (capturingState === null) {
-          // we didn't capture any accepting state but
-          // hit an error state, report the error
-          throw new InvalidCharError("Unknown charecter", this.index - 1);
+      s: switch (state) {
+        case ErrorState: {
+          if (capturingState === null) {
+            // we didn't capture any accepting state but
+            // hit an error state, report the error
+            throw new InvalidCharError("Unknown charecter", this.index - 1);
+          }
+
+          // otherwise, we have something to return
+          this.index = capturingIndex;
+          return new Token(capturingState, startIndex, capturingIndex);
         }
 
-        // otherwise, we have something to return
-        this.index = capturingIndex;
-        return new Token(capturingState, startIndex, capturingIndex);
-      } else if (state === this.fa.start) {
-        // reset the index
-        startIndex = this.index;
-      } else {
-        // capture the state if it's in <FiniteAutomata>.accepting
-        if (this.fa.accepting.has(state)) {
-          capturingState = state;
-          capturingIndex = this.index;
+        case this.fa.start: {
+          // reset the index
+          startIndex = this.index;
+          break s;
+        }
+
+        default: {
+          // capture the state if it's in <FiniteAutomata>.accepting
+          if (this.fa.accepting.has(state)) {
+            capturingState = state;
+            capturingIndex = this.index;
+          }
+
+          break s;
         }
       }
     }
