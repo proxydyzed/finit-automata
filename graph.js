@@ -17,7 +17,7 @@ export class StateGraph {
     // #<FinitAutomata>.mappings will always have every state (except ErrorState)
     this.map = this.fa.mappings.get(start);
   }
-  
+
   /**
    * @param {string} str
    */
@@ -48,6 +48,9 @@ export class StateGraph {
     return state;
   }
 
+  /**
+   * @param {string} name
+   */
   appendVertex(name) {
     const state = Symbol(String(name));
     this.fa.states.add(state);
@@ -57,19 +60,33 @@ export class StateGraph {
     return new StateGraph(this.fa, state);
   }
 
+  /**
+   * @param {string} alpha
+   * @param {symbol} state
+   */
   addEdge(alpha, state) {
     this.fa.alphabets.add(alpha);
     this.map.set(alpha, state);
   }
 
+  /**
+   * @param {string} alpha
+   */
   hasEdge(alpha) {
     return this.map.has(alpha);
   }
 
+  /**
+   * @param {string} alpha
+   */
   getEdge(alpha) {
     return this.map.get(alpha);
   }
 
+  /**
+   * @param {Array<string>} edges
+   * @param {symbol} state
+   */
   addEdges(edges, state) {
     for (const alpha of edges) {
       this.addEdge(alpha, state);
