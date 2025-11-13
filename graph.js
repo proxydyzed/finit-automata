@@ -62,6 +62,14 @@ export class StateGraph {
     this.map.set(alpha, state);
   }
 
+  hasEdge(alpha) {
+    return this.map.has(alpha);
+  }
+
+  getEdge(alpha) {
+    return this.map.get(alpha);
+  }
+
   addEdges(edges, state) {
     for (const alpha of edges) {
       this.addEdge(alpha, state);
