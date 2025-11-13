@@ -73,12 +73,65 @@ stateToTagMap.set(root.appendString("."),     Symbol("period"));
   stateToTagMap.set(node.start, Symbol("number"));
 }
 
+// identifiers are tricky.
+// recklessly adding edges might break some
+// keywords. so we have to walk the graph and
+// add "identifier" edge to the end of all
+// keywords. and also make every keyword node
+// an accepting node.
+{
+  const alphabets = ["_"];
+  for (let i = 97; i <= 122; i++) {
+    alphabets.push(String.fromCharCode(i));
+  }
+
+  const alphanumeric = [...alphabets];
+  for (let i = 0; i < 10; i++) {
+    alphanumeric.push(String(i));
+  }
+
+  const ident = root.appendVertex("identifier");
+  const identTag = Symbol("identifier");
+  ident.addEdges(alphanumeric, ident.start);
+  ident.accept();
+  stateToTagMap.set(ident.start, identTag);
+
+  const workList = [root];
+  while (workList.length > 0) {
+    const node1 = workList.pop();
+    for (const alpha of alphabets) {
+      if (node1.hasEdge(alpha)) {
+        // if an edge exists, add it to the work list
+        const node2 = node1.getVertex(alpha);
+        workList.push(node2);
+
+        // if it is not already an accepting state
+        // that means it is safe to overwrite it to
+        // the "identifier" state
+        if (!fa.accepting.has(node2.start)) {
+          node2.accept();
+          stateToTagMap.set(node2.start, identTag);
+        }
+      } else {
+        // otherwise, add an edge to "identifier"
+
+        // TODO: add an empty matchmaker so that 
+        // the graph does not look as horrible as
+        // right now after adding every single 
+        // alphanumeric character to every vertex 
+        // in the keyword recognition path.
+        node1.addEdge(alpha, ident.start);
+      }
+    }
+  }
+}
+
 // debug
 // console.log(fa);
 // console.log(JSON.stringify(fa, null, 2));
 
 const input = `2101    new
-while .not`;
+while .not n news nothing awhile`;
 
 const recognizer = new ExhaustiveRecognizer(fa);
 console.assert(!recognizer.accepts(input));
@@ -91,11 +144,19 @@ console.assert(!recognizer.accepts("new."));
 // an eof token instead of throwing an error
 // at the end of input
 const tokenizer = new TokenRecognizer(fa, input);
-console.log(tok(tokenizer.next())); // number
-console.log(tok(tokenizer.next())); // "new"
-console.log(tok(tokenizer.next())); // "while"
-console.log(tok(tokenizer.next())); // period
-console.log(tok(tokenizer.next())); // "not"
+try {
+  console.log(tok(tokenizer.next())); // number
+  console.log(tok(tokenizer.next())); // "new"
+  console.log(tok(tokenizer.next())); // "while"
+  console.log(tok(tokenizer.next())); // period
+  console.log(tok(tokenizer.next())); // "not"
+  console.log(tok(tokenizer.next())); // "n"
+  console.log(tok(tokenizer.next())); // "news"
+  console.log(tok(tokenizer.next())); // "nothing"
+  console.log(tok(tokenizer.next())); // "awhila"
+} catch (error) {
+  console.error(error);
+}
 
 function tok(token) {
   return {
