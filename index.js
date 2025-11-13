@@ -13,6 +13,9 @@ stateToTagMap.set(root.appendString("."),     Symbol("period"));
 
 {
   root.addEdge(" ", root.start);
+  root.addEdge("\n", root.start);
+  root.addEdge("\r", root.start);
+  root.addEdge("\t", root.start);
 }
 
 {
@@ -62,7 +65,8 @@ stateToTagMap.set(root.appendString("."),     Symbol("period"));
 // console.log(fa);
 // console.log(JSON.stringify(fa, null, 2));
 
-const input = "2101    new while.not";
+const input = `2101    new
+while .not`;
 
 const recognizer = new ExhaustiveRecognizer(fa);
 console.assert(!recognizer.accepts(input));
@@ -70,6 +74,10 @@ console.assert(recognizer.accepts("2101"));
 console.assert(recognizer.accepts("new"));
 console.assert(!recognizer.accepts("new."));
 
+// TODO:
+// somehow convey to the tokenizer to emit
+// an eof token instead of throwing an error
+// at the end of input
 const tokenizer = new TokenRecognizer(fa, input);
 console.log(tok(tokenizer.next())); // number
 console.log(tok(tokenizer.next())); // "new"
