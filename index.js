@@ -12,7 +12,7 @@ stateToTagMap.set(root.appendString("while"), Symbol("while"));
 stateToTagMap.set(root.appendString("."),     Symbol("period"));
 
 // TODO:
-// invent complementary charecter and add comments
+// invent complementary character and add comments
 // {
 //   const node1 = root.appendVertex("maybe-comment");
 //   const node2 = root.appendVertex("definitely-comment");
@@ -41,7 +41,7 @@ stateToTagMap.set(root.appendString("."),     Symbol("period"));
   //          ^
 
   // make the node an accepting state
-  // tecnically '0' is a number, any
+  // technically '0' is a number, any
   // digits following it are errors
   node.accept();
 
