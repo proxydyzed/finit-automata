@@ -77,10 +77,12 @@ export class StateGraph {
   }
 
   /**
+   * Caller must ensure there exists an edge
+   * 
    * @param {string} alpha
    */
-  getEdge(alpha) {
-    return this.map.get(alpha);
+  getVertex(alpha) {
+    return new StateGraph(this.fa, this.map.get(alpha));
   }
 
   /**
