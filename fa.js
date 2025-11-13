@@ -12,10 +12,10 @@ export class FiniteAutomata {
     this.start = Symbol("start");
     this.states = new Set([this.start, ErrorState]);
     
-    const map = new Map([["", this.start]]);
+    const map = new Map([["_", this.start]]);
     this.mappings = new Map([[this.start, map]]);
 
-    this.alphabets = new Set([["", -1]]);
+    this.alphabets = new Set(["_"]);
     this.accepting = new Set([ErrorState]);
 
     map.clear();
@@ -24,8 +24,11 @@ export class FiniteAutomata {
   }
 
   /**
-   * @param {symbol} state
-   * @param {string} alpha
+   *      c
+   * s(0) -> δ(s, c)
+   * 
+   * @param {symbol} state {s|s ∈ FinitAutomata.states}
+   * @param {string} alpha {c|c ∈ FinitAutomata.alphabets}
    */
   delta(state, alpha) {
     if (state === ErrorState) {
@@ -35,26 +38,33 @@ export class FiniteAutomata {
     return this.mappings.get(state).get(alpha) ?? ErrorState;
   }
 
-  // /**
-  //  * @param {symbol} state
-  //  * @param {string} alpha
-  //  */
-  // δ(state, alpha) {
-  //   return this.delta(state, alpha);
-  // }
-
   toJSON() {
+    const { start, states, mappings, alphabets, accepting } = this;
+    const stateMap = new Map(Array.from(states, function(state, index) {
+      return [state, index];
+    }));
+
     return {
-      start: String(this.start),
-      states: [...this.states].map(state => state.description),
-      mappings: Object.fromEntries(
-        [...this.mappings.entries()]
-          .map(([state, map]) => [state.description, Object.fromEntries(
-            [...map.entries()].map(([k, v]) => [k, v.description])
-          )])
-      ),
-      alphabets: [...this.alphabets],
-      accepting: [...this.accepting.values()].map(state => state.description),
+      start: stateMap.get(start),
+      error: stateMap.get(ErrorState),
+      states: Array.from(states, function(state) {
+        return state.description;
+      }),
+      mappings: Array.from(mappings, function([state, map]) {
+        return {
+          key: stateMap.get(state),
+          value: Array.from(map, function([k, v]) {
+            return {
+              key: k,
+              value: stateMap.get(v),
+            };
+          }),
+        };
+      }),
+      alphabets: Array.from(alphabets),
+      accepting: Array.from(accepting, function(state) {
+        return stateMap.get(state);
+      }),
     };
   }
 };

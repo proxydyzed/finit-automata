@@ -1,13 +1,24 @@
 import { FiniteAutomata, ErrorState } from "./fa.js";
 import { StateGraph } from "./graph.js";
-import { Recognizer } from "./recognizer.js";
+import { ExhaustiveRecognizer, TokenRecognizer } from "./recognizer.js";
 
 const fa = new FiniteAutomata();
 const root = new StateGraph(fa, fa.start);
+const stateToTagMap = new Map();
 
-root.appendString("new");
-root.appendString("not");
-root.appendString("while");
+stateToTagMap.set(root.appendString("new"),   Symbol("new"));
+stateToTagMap.set(root.appendString("not"),   Symbol("not"));
+stateToTagMap.set(root.appendString("while"), Symbol("while"));
+stateToTagMap.set(root.appendString("."),     Symbol("period"));
+
+{
+  const node = root.appendVertex("space");
+  root.addEdge(" ", node.start);
+  node.addEdge(" ", node.start);
+  node.accept();
+
+  stateToTagMap.set(node.start, Symbol("space"));
+}
 
 {
   // add an edge to zero (number)
@@ -23,6 +34,8 @@ root.appendString("while");
   // tecnically '0' is a number, any
   // digits following it are errors
   node.accept();
+
+  stateToTagMap.set(node.start, Symbol("zero"));
 }
 
 {
@@ -47,13 +60,35 @@ root.appendString("while");
 
   // make the node an accepting state
   node.accept();
+  stateToTagMap.set(node.start, Symbol("number"));
 }
 
 // debug
 // console.log(fa);
 // console.log(JSON.stringify(fa, null, 2));
 
-const recognizer = new Recognizer(fa);
-console.log(recognizer.accepts("2101")); // true
-console.log(recognizer.accepts("new"));  // true
-console.log(recognizer.accepts("new.")); // false
+const input = "2101    new while.not";
+
+const recognizer = new ExhaustiveRecognizer(fa);
+console.assert(!recognizer.accepts(input));
+console.assert(recognizer.accepts("2101"));
+console.assert(recognizer.accepts("new"));
+console.assert(!recognizer.accepts("new."));
+
+// TODO:
+// somehow convey to the recognizer to ignore spaces
+const tokenizer = new TokenRecognizer(fa, input);
+console.log(tok(tokenizer.next())); // number
+console.log(tok(tokenizer.next())); // space
+console.log(tok(tokenizer.next())); // "new"
+console.log(tok(tokenizer.next())); // space
+console.log(tok(tokenizer.next())); // "while"
+console.log(tok(tokenizer.next())); // period
+console.log(tok(tokenizer.next())); // "not"
+
+function tok(token) {
+  return {
+    tag: stateToTagMap.get(token.state),
+    str: input.slice(token.start, token.end),
+  };
+}
