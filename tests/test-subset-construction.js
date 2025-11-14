@@ -61,27 +61,20 @@ while (worklist.length > 0) {
  * @param {ArrayLike<symbol>} states
  * @param {number} index
  */
- function deltas(nfa, states, index) {
-   // const worklist = Array.from(states);
-   const seen = new Set(Array.from({ length: 0 }, () => Symbol("")));
-   for (const state1 of states) {
-     // seen.add(state1);
-     
-     let next = nfa.delta(state1, index) ?? [];
-     if (index !== KnownMappings.epsilon) {
-       const all = nfa.mappings.get(state1).get(KnownMappings.sigma);
-       if (typeof all !== "undefined") {
-         next = [...next, ...all];
-       }
-     }
-      
-     for (const state2 of next) {
-       seen.add(state2);
-     }
-   }
-   
-   return seen;
- }
+function deltas(nfa, states, index) {
+  const seen = new Set(Array.from({ length: 0 }, () => Symbol("")));
+  for (const state1 of states) {
+    let next = nfa.delta(state1, index) ?? [];
+    if (index !== KnownMappings.epsilon) {
+      const sigmaMapping = nfa.delta(state1, KnownMappings.sigma) ?? [];
+      next = [...next, ...sigmaMapping];
+    }
+    for (const state2 of next) {
+      seen.add(state2);
+    }
+  }
+  return seen;
+}
 
 /**
  * @param {NondeterministicFiniteAutomata} nfa
