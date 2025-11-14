@@ -31,8 +31,8 @@ export class FixedColumnTable {
   }
 
   *[Symbol.iterator]() {
-    for (let i = 0; i < this.buffer.length; i += 3) {
-      yield takeBuffer(this.buffer, i, 3);
+    for (let i = 0; i < this.buffer.length; i += this.cols) {
+      yield takeBuffer(this.buffer, i, this.cols);
     }
   }
 };
