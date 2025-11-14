@@ -14,8 +14,10 @@ export function subsetConstruction(nfa) {
   // const Q = new Map(Array.from({ length: 0 }, () => [Symbol(""), new Set([Symbol("")])]));
 
   const table = new FixedColumnTable(nfa.alphabets.size);
+  const alphabets = Array.from(nfa.alphabets);
+
   const qq = epsilonClosure(nfa, [nfa.start]);
-  const Q = new Map([[new Set(qq), Symbol("d0")]]);
+  const Q = [[Symbol("d0"), new Set(qq)]];
   const worklist = [qq];
   let worklistIndex = 0;
 
@@ -26,10 +28,9 @@ export function subsetConstruction(nfa) {
     // console.log("worklist", Array.from(q, s => s.description));
 
     let   col = 0;
-    const row = table.rows;
-    table.allocRow();
+    const row = table.allocRow();
 
-    for (const index of nfa.alphabets.values()) {
+    for (const [, index] of alphabets) {
       const d = deltas(nfa, q, index);
       const t = epsilonClosure(nfa, d);
 
@@ -43,14 +44,14 @@ export function subsetConstruction(nfa) {
       if (t.size === 0) {
         elem.deref = EmptySet;
       } else {
-        const alreadyProcessed = worklist.find(workset => setsAreEqual(workset, t));
-        if (!alreadyProcessed) {
-          const dfaState = Symbol(`d${Q.size}`);
-          Q.set(t, dfaState);
+        const alreadyProcessed = Q.find(([, states]) => setsAreEqual(states, t));
+        if (typeof alreadyProcessed === "undefined") {
+          const dfaState = Symbol(`d${Q.length}`);
+          Q.push([dfaState, t]);
           worklist.push(t);
           elem.deref = dfaState;
         } else {
-          elem.deref = Q.get(alreadyProcessed);
+          elem.deref = alreadyProcessed[0];
         }
       }
       col++;
@@ -59,8 +60,9 @@ export function subsetConstruction(nfa) {
   }
 
   return {
-    Q: new Map(Array.from(Q, ([k, v]) => [v, k])),
+    Q: Q,
     T: table,
+    "∑": alphabets.map(([k]) => k),
   };
 }
 
