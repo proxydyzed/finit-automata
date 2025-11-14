@@ -58,6 +58,7 @@ function minimizeDfa(dfa) {
 
     }
   }
+}
 //   const dfa2 = new FiniteAutomata();
 //   const accepting    = dfa.accepting;
 //   const nonAccepting = new Set();

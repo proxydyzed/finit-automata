@@ -24,9 +24,10 @@ try {
   // console.log(JSON.stringify(nfa, null, 4));
   // console.log(nfa.stringifyMappings());
 
-  const data = subsetConstruction(nfa);
-  console.log("Entries:", data.Q);
-  console.log(`Table{ rows: ${data.T.rows}, cols: ${data.T.cols} }:`, data.T.buffer);
+  const dfa = subsetConstruction(nfa);
+  console.log(dfa);
+  // console.log("Entries:", data.Q);
+  // console.log(`Table{ rows: ${data.T.rows}, cols: ${data.T.cols} }:`, data.T.buffer);
 } catch (error) {
   console.error(error);
 }
