@@ -1,5 +1,6 @@
 import { FixedColumnTable } from "./tables.js";
 import { KnownMappings } from "./nfa.js";
+import { FiniteAutomata, ErrorState } from "../dst/export.js";
 
 export const EmptySet = Symbol("empty");
 
@@ -11,7 +12,7 @@ export function subsetConstruction(nfa) {
   const alphabets = Array.from(nfa.alphabets);
 
   const qq = epsilonClosure(nfa, [nfa.start]);
-  const Q = [[Symbol("d0"), new Set(qq)]];
+  const entries = [new Entry(Symbol("d0"), new Set(qq))];
   const worklist = [qq];
   let worklistIndex = 0;
 
@@ -29,14 +30,14 @@ export function subsetConstruction(nfa) {
       if (t.size === 0) {
         elem.deref = EmptySet;
       } else {
-        const alreadyProcessed = Q.find(([, states]) => setsAreEqual(states, t));
+        const alreadyProcessed = entries.find(({ states }) => setsAreEqual(states, t));
         if (typeof alreadyProcessed === "undefined") {
-          const dfaState = Symbol(`d${Q.length}`);
-          Q.push([dfaState, t]);
+          const dfaState = Symbol(`d${entries.length}`);
+          entries.push(new Entry(dfaState, t));
           worklist.push(t);
           elem.deref = dfaState;
         } else {
-          elem.deref = alreadyProcessed[0];
+          elem.deref = alreadyProcessed.name;
         }
       }
 
@@ -44,11 +45,68 @@ export function subsetConstruction(nfa) {
     }
   }
 
-  return {
-    Q: Q,
-    T: table,
-    "∑": alphabets.map(([k]) => k),
-  };
+  return makeDfa(nfa, entries, table, alphabets.map(([k]) => k));
+}
+
+function makeDfa(nfa, entries, table, alphabets) {
+  const reversed = new Map(Array.from(nfa.alphabets, ([v, k]) => [k, v]));
+  reversed.set(KnownMappings.epsilon, "∈");
+  reversed.set(KnownMappings.sigma, "∑");
+
+  const dfa = new FiniteAutomata()
+  for (const [alpha, index] of alphabets) {
+    dfa.alphabets.add(alpha);
+  }
+
+  dfa.start = entries[0].name;
+  dfa.states = new Set([ErrorState, dfa.start]);
+  dfa.mappings.clear();
+
+  for (const { name: state } of entries) {
+    dfa.states.add(state);
+    dfa.mappings.set(state, new Map());
+  }
+
+  for (const { name: q, states } of entries) {
+    for (const state of states) {
+      if (nfa.accepting.has(state)) {
+        dfa.accepting.add(q);
+      }
+    }
+  }
+
+  let rowCount = 0;
+  for (const row of table) {
+    let colCount = 0;
+    for (const { deref: state2 } of row) {
+      if (state2 !== EmptySet) {
+        const { name: state1 } = entries.at(rowCount);
+        const alpha = alphabets.at(colCount);
+
+        // console.log(`${state1.description} + ${alpha} -> ${state2.description}`);
+        dfa.mappings.get(state1).set(alpha, state2);
+      }
+      colCount++;
+    }
+    rowCount++;
+  }
+
+  return dfa;
+}
+
+class Entry {
+  name;
+  states;
+
+  /**
+   * Subset table entry
+   * @param {symbol} name DFA state
+   * @param {Set<symbol>} states corresponding NFA states
+   */
+  constructor(name, states) {
+    this.name = name;
+    this.states = states;
+  }
 }
 
 /**
@@ -128,7 +186,7 @@ function addTo(set1, set2) {
  * @param {Set<any>} set1
  * @param {Set<any>} set2
  */
-function setsAreEqual(set1, set2) {
+export function setsAreEqual(set1, set2) {
   if (set1.size !== set2.size) {
     return false;
   }
@@ -140,4 +198,12 @@ function setsAreEqual(set1, set2) {
   }
 
   return true;
+}
+
+/**
+ * @param {Set<any>} set1
+ * @param {Set<any>} set2
+ */
+export function unionOfSets(set1, set2) {
+  return new Set([...set1, ...set2]);
 }
