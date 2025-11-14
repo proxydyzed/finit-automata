@@ -1,6 +1,8 @@
 import { FixedColumnTable } from "./tables.js";
 import { KnownMappings } from "./nfa.js";
 
+export const EmptySet = Symbol("empty");
+
 /**
  * @param {NondeterministicFiniteAutomata} nfa
  */
@@ -9,8 +11,11 @@ export function subsetConstruction(nfa) {
   // reversed.set(KnownMappings.epsilon, "∈");
   // reversed.set(KnownMappings.sigma, "∑");
 
+  // const Q = new Map(Array.from({ length: 0 }, () => [Symbol(""), new Set([Symbol("")])]));
+
   const table = new FixedColumnTable(nfa.alphabets.size);
   const qq = epsilonClosure(nfa, [nfa.start]);
+  const Q = new Map([[new Set(qq), Symbol("d0")]]);
   const worklist = [qq];
   let worklistIndex = 0;
 
@@ -34,10 +39,11 @@ export function subsetConstruction(nfa) {
       // );
 
       const elem = table.get({ row: row, col: col });
-      elem.deref = t;
 
-      if (t.size > 0) {
-        const alreadyProcessed = worklist.some(workset => {
+      if (t.size === 0) {
+        elem.deref = EmptySet;
+      } else {
+        const alreadyProcessed = worklist.find(workset => {
           if (workset.size !== t.size) {
             return false;
           }
@@ -52,7 +58,12 @@ export function subsetConstruction(nfa) {
         });
 
         if (!alreadyProcessed) {
+          const dfaState = Symbol(`d${Q.size}`);
+          Q.set(t, dfaState);
           worklist.push(t);
+          elem.deref = dfaState;
+        } else {
+          elem.deref = Q.get(alreadyProcessed);
         }
       }
       col++;
@@ -61,8 +72,8 @@ export function subsetConstruction(nfa) {
   }
 
   return {
-    entries: worklist,
-    table: table,
+    Q: new Map(Array.from(Q, ([k, v]) => [v, k])),
+    T: table,
   };
 }
 
