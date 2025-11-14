@@ -7,12 +7,6 @@ export const EmptySet = Symbol("empty");
  * @param {NondeterministicFiniteAutomata} nfa
  */
 export function subsetConstruction(nfa) {
-  // const reversed = new Map(Array.from(nfa.alphabets, ([v, k]) => [k, v]));
-  // reversed.set(KnownMappings.epsilon, "∈");
-  // reversed.set(KnownMappings.sigma, "∑");
-
-  // const Q = new Map(Array.from({ length: 0 }, () => [Symbol(""), new Set([Symbol("")])]));
-
   const table = new FixedColumnTable(nfa.alphabets.size);
   const alphabets = Array.from(nfa.alphabets);
 
@@ -25,20 +19,11 @@ export function subsetConstruction(nfa) {
     const q = worklist.at(worklistIndex);
     worklistIndex++;
 
-    // console.log("worklist", Array.from(q, s => s.description));
-
     let   col = 0;
     const row = table.allocRow();
-
     for (const [, index] of alphabets) {
       const d = deltas(nfa, q, index);
       const t = epsilonClosure(nfa, d);
-
-      // console.log(`For "${reversed.get(index)}"\n`,
-      //   "Delta", Array.from(d, s => s.description), "\n",
-      //   "epsilon-closure", Array.from(t, s => s.description),
-      // );
-
       const elem = table.get({ row: row, col: col });
 
       if (t.size === 0) {
@@ -54,9 +39,9 @@ export function subsetConstruction(nfa) {
           elem.deref = alreadyProcessed[0];
         }
       }
+
       col++;
     }
-    // console.log("-- end --\n\n");
   }
 
   return {

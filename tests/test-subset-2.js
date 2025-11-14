@@ -6,7 +6,7 @@ import { subsetConstruction, EmptySet } from "./subset-construction.js";
 try {
   const nfa = new NondeterministicFiniteAutomata("n0");
 
-  // NFA for the RE "a(b|c)"
+  // NFA for the RE "a(b|c)*"
   const n0 = nfa.start;
   const n1 = nfa.addVertex("n1");
   const n2 = nfa.addVertex("n2");
@@ -39,16 +39,17 @@ try {
   // console.log(JSON.stringify(nfa, null, 4));
   // console.log(nfa.stringifyMappings());
 
-  const data = subsetConstruction(nfa);
-  const table = data.T;
-  const entries = data.Q;
+  const subset = subsetConstruction(nfa);
+  // const table = subset.T;
+  // const entries = subset.Q;
 
-  // console.log(data);
-  // console.log("Entries:", data.Q);
-  // console.log(`Table{ rows: ${data.T.rows}, cols: ${data.T.cols} }:`, data.T.buffer);
+  // console.log(subset);
+  // console.log("Entries:", subset.Q);
+  // console.log(`Table{ rows: ${subset.T.rows}, cols: ${subset.T.cols} }:`, subset.T.buffer);
 
-  const dfa = makeDfa(nfa, entries, table, data["∑"]);
+  const dfa = makeDfa(nfa, subset.Q, subset.T, subset["∑"]);
   const recognizer = new ExhaustiveRecognizer(dfa);
+
   console.log(dfa);
   console.log(recognizer.accepts("abcbbcbbcccbcb"));
 } catch (error) {
@@ -65,7 +66,7 @@ function makeDfa(nfa, entries, table, alphabets) {
     dfa.alphabets.add(alpha);
   }
 
-  dfa.start = entries.at(0)[0];
+  dfa.start = entries[0][0];
   dfa.states = new Set([ErrorState, dfa.start]);
   dfa.mappings.clear();
 
