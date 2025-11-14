@@ -1,7 +1,7 @@
 import { FixedColumnTable } from "./tables.js";
 import { NondeterministicFiniteAutomata, KnownMappings } from "./nfa.js";
 import { FiniteAutomata, ErrorState, ExhaustiveRecognizer } from "../dst/export.js";
-import { subsetConstruction, EmptySet } from "./subset-construction.js";
+import { subsetConstruction, EmptySet, setsAreEqual, unionOfSets } from "./subset-construction.js";
 
 try {
   const nfa = new NondeterministicFiniteAutomata("n0");
@@ -39,65 +39,13 @@ try {
   // console.log(JSON.stringify(nfa, null, 4));
   // console.log(nfa.stringifyMappings());
 
-  const subset = subsetConstruction(nfa);
-  // const table = subset.T;
-  // const entries = subset.Q;
-
-  // console.log(subset);
-  // console.log("Entries:", subset.Q);
-  // console.log(`Table{ rows: ${subset.T.rows}, cols: ${subset.T.cols} }:`, subset.T.buffer);
-
-  const dfa = makeDfa(nfa, subset.Q, subset.T, subset["∑"]);
+  const dfa = subsetConstruction(nfa);
   const recognizer = new ExhaustiveRecognizer(dfa);
 
   console.log(dfa);
   console.log(recognizer.accepts("abcbbcbbcccbcb"));
+
+  // const dfa2 = minimizeDfa(dfa);
 } catch (error) {
   console.error(error);
-}
-
-function makeDfa(nfa, entries, table, alphabets) {
-  const reversed = new Map(Array.from(nfa.alphabets, ([v, k]) => [k, v]));
-  reversed.set(KnownMappings.epsilon, "∈");
-  reversed.set(KnownMappings.sigma, "∑");
-
-  const dfa = new FiniteAutomata()
-  for (const [alpha, index] of alphabets) {
-    dfa.alphabets.add(alpha);
-  }
-
-  dfa.start = entries[0][0];
-  dfa.states = new Set([ErrorState, dfa.start]);
-  dfa.mappings.clear();
-
-  for (const [state] of entries) {
-    dfa.states.add(state);
-    dfa.mappings.set(state, new Map());
-  }
-
-  for (const [q, states] of entries) {
-    for (const state of states) {
-      if (nfa.accepting.has(state)) {
-        dfa.accepting.add(q);
-      }
-    }
-  }
-
-  let rowCount = 0;
-  for (const row of table) {
-    let colCount = 0;
-    for (const { deref: state2 } of row) {
-      if (state2 !== EmptySet) {
-        const [state1] = entries.at(rowCount);
-        const alpha = alphabets.at(colCount);
-
-        // console.log(`${state1.description} + ${alpha} -> ${state2.description}`);
-        dfa.mappings.get(state1).set(alpha, state2);
-      }
-      colCount++;
-    }
-    rowCount++;
-  }
-
-  return dfa;
 }
