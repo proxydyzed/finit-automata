@@ -27,8 +27,21 @@ export class FixedColumnTable {
     }
     
     this.rows++;
+    return this.rows - 1;
+  }
+
+  *[Symbol.iterator]() {
+    for (let i = 0; i < this.buffer.length; i += 3) {
+      yield takeBuffer(this.buffer, i, 3);
+    }
   }
 };
+
+function* takeBuffer(buffer, offset, amount) {
+  for (let i = 0; i < amount; i++) {
+    yield buffer.at(offset + i);
+  }
+}
 
 export class TableElementPointer {
   deref;
