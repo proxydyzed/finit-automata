@@ -43,20 +43,7 @@ export function subsetConstruction(nfa) {
       if (t.size === 0) {
         elem.deref = EmptySet;
       } else {
-        const alreadyProcessed = worklist.find(workset => {
-          if (workset.size !== t.size) {
-            return false;
-          }
-
-          for (const elem of workset) {
-            if (!t.has(elem)) {
-              return false;
-            }
-          }
-
-          return true;
-        });
-
+        const alreadyProcessed = worklist.find(workset => setsAreEqual(workset, t));
         if (!alreadyProcessed) {
           const dfaState = Symbol(`d${Q.size}`);
           Q.set(t, dfaState);
@@ -148,4 +135,22 @@ function addTo(set1, set2) {
   for (const elem of set1) {
     set2.add(elem);
   }
+}
+
+/**
+ * @param {Set<any>} set1
+ * @param {Set<any>} set2
+ */
+function setsAreEqual(set1, set2) {
+  if (set1.size !== set2.size) {
+    return false;
+  }
+
+  for (const elem of set1) {
+    if (!set2.has(elem)) {
+      return false;
+    }
+  }
+
+  return true;
 }
