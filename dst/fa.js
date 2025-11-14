@@ -7,20 +7,15 @@ export class FiniteAutomata {
   alphabets;
   accepting;
 
-  // JavaScript engine type-inference shenaniguns
   constructor() {
     this.start = Symbol("start");
     this.states = new Set([this.start, ErrorState]);
-    
-    const map = new Map([["_", this.start]]);
+
+    // JavaScript engine type-inference shenaniguns
+    const map = new Map(Array.from({ length: 0 }, () => ["", Symbol("")]));
     this.mappings = new Map([[this.start, map]]);
-
-    this.alphabets = new Set(["_"]);
-    this.accepting = new Set([ErrorState]);
-
-    map.clear();
-    this.alphabets.clear();
-    this.accepting.clear();
+    this.alphabets = new Set(Array.from({ length: 0 }, () => ""));
+    this.accepting = new Set(Array.from({ length: 0 }, () => Symbol("")));
   }
 
   /**
