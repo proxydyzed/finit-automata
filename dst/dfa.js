@@ -2,9 +2,9 @@ import {
   ErrorState,
   KnownMappings,
   KnownMappingsSize,
-} from "../dst/export.js";
+} from "./export.js";
 
-export class NondeterministicFiniteAutomata {
+export class DeterministicFiniteAutomata {
   start;
   states;
   mappings;
@@ -16,7 +16,7 @@ export class NondeterministicFiniteAutomata {
     this.states = new Set([ErrorState, this.start]);
 
     // JavaScript engine type-inference shenaniguns
-    const map = new Map(Array.from({ length: 0 }, () => [0, [Symbol("")]]));
+    const map = new Map(Array.from({ length: 0 }, () => [0, Symbol("")]));
     this.mappings = new Map([[this.start, map]]);
     this.alphabets = new Map(Array.from({ length: 0 }, () => ["", 0]));
     this.accepting = new Set(Array.from({ length: 0 }, () => Symbol("")));
@@ -24,7 +24,7 @@ export class NondeterministicFiniteAutomata {
 
   /**
    * ~    c
-   * s(0) -> {δ(s, c)}
+   * s(0) -> δ(s, c)
    * 
    * @param {symbol} state {s|s ∈ FinitAutomata.states}
    * @param {number} index {c|c ∈ FinitAutomata.alphabets}
@@ -40,9 +40,9 @@ export class NondeterministicFiniteAutomata {
     }
 
     if (state === ErrorState) {
-      return null;
+      return ErrorState;
     }
-    
+
     const mapping = this.mappings.get(state);
     if (mapping.has(index)) {
       // if (mapping.has(KnownMappings.sigma)) {
@@ -53,7 +53,7 @@ export class NondeterministicFiniteAutomata {
     // if (mapping.has(KnownMappings.sigma)) {
     //   return mapping.get(KnownMappings.sigma);
     // }
-    return null;
+    return ErrorState;
   }
   
   addAlphabet(alpha) {
@@ -83,14 +83,19 @@ export class NondeterministicFiniteAutomata {
     this.states.add(state);
     this.mappings.set(state, new Map());
   }
-
+  
   addEdge(index, state1, state2) {
-    const mappings = this.mappings.get(state1);
-    if (mappings.has(index)) {
-      mappings.get(index).push(state2);
-    } else {
-      mappings.set(index, [state2]);
+    if (typeof index !== "number") {
+      throw new TypeError(`Expected argument "index" to be number, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof index}`);
     }
+    if (typeof state1 !== "symbol") {
+      throw new TypeError(`Expected argument "state1" to be symbol, but got ${typeof state1 === "object" ? (state1.constructor?.name ?? "null") : typeof state1}`);
+    }
+    if (typeof state2 !== "symbol") {
+      throw new TypeError(`Expected argument "state2" to be symbol, but got ${typeof state2 === "object" ? (state2.constructor?.name ?? "null") : typeof state2}`);
+    }
+
+    this.mappings.get(state1).set(index, state2);
   }
 
   toJSON() {
@@ -111,9 +116,7 @@ export class NondeterministicFiniteAutomata {
           value: Array.from(map, function([k, v]) {
             return {
               key: k,
-              value: v.map(function(sym) {
-                return stateMap.get(sym);
-              }),
+              value: stateMap.get(v),
             };
           }),
         };
@@ -128,8 +131,8 @@ export class NondeterministicFiniteAutomata {
   stringifyMappings() {
     const reversed = new Map(Array.from(this.alphabets, ([v, k]) => [k, v]));
     let str = "";
-    for (const [state, map] of this.mappings) {
-      for (const [index, states] of map) {
+    for (const [state1, map] of this.mappings) {
+      for (const [index, state2] of map) {
         let alpha;
         rev: switch (index) {
           case KnownMappings.epsilon: {
@@ -146,10 +149,7 @@ export class NondeterministicFiniteAutomata {
           }
         }
         
-        const prefix = `${state.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => `;
-        for (const sym of states) {
-          str += `${prefix}${sym.description}\n`;
-        }
+        str += `${state1.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => ${state2.description}\n`;
       }
     }
     

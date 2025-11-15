@@ -1,7 +1,13 @@
-import { NondeterministicFiniteAutomata } from "./nfa.js";
-import { DeterministicFiniteAutomata } from "./dfa.js";
-import { ErrorState, ExhaustiveRecognizer, KnownMappings } from "../dst/export.js";
-import { subsetConstruction } from "./subset-construction.js";
+import {
+  DeterministicFiniteAutomata,
+  NondeterministicFiniteAutomata,
+  ErrorState,
+  ExhaustiveRecognizer,
+  KnownMappings,
+} from "../dst/export.js";
+import {
+  subsetConstruction,
+} from "./subset-construction.js";
 
 class MinimizationContext {
   #dfa;
