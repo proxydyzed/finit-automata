@@ -9,14 +9,10 @@ import {
   minimizeDfa,
   subsetConstruction,
 } from "../algs/export.js";
-import {
-  setup1,
-  setup2,
-  setup3,
-} from "./setups.js";
+import * as setups from "./setups.js";
 
 try {
-  const dfa = setup2();
+  const dfa = setups.setup4();
   const recognizer = new ExhaustiveRecognizer(dfa);
   
   // console.assert(recognizer.accepts("a"),   `Failed to recognize "a"`);

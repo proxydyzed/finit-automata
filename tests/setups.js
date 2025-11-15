@@ -44,6 +44,7 @@ export function setup1() {
 }
 
 export function setup2() {
+  // some random dfa from wikipedia
   const dfa = new DeterministicFiniteAutomata("a");
 
   const na = dfa.start;
@@ -100,5 +101,33 @@ export function setup3() {
   dfa.accepting.add(s3);
   dfa.accepting.add(s5);
 
+  return dfa;
+}
+
+export function setup4() {
+  const dfa = new DeterministicFiniteAutomata(Symbol("Rem 0"));
+  const q0 = dfa.start;
+  const q1 = dfa.addVertex("Rem 1");
+  const q2 = dfa.addVertex("Rem 2");
+  const q3 = dfa.addVertex("Rem 3");
+
+  const a0 = dfa.addAlphabet("0");
+  const a1 = dfa.addAlphabet("1");
+
+  dfa.addEdge(a0, q0, q0);
+  dfa.addEdge(a1, q0, q1);
+
+  dfa.addEdge(a0, q1, q2);
+  dfa.addEdge(a1, q1, q3);
+
+  dfa.addEdge(a0, q2, q0);
+  dfa.addEdge(a1, q2, q1);
+
+  dfa.addEdge(a0, q3, q2);
+  dfa.addEdge(a1, q3, q3);
+
+  dfa.accepting.add(q0);
+
+  // console.log(dfa);
   return dfa;
 }
