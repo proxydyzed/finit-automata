@@ -24,7 +24,7 @@ export class DeterministicFiniteAutomata {
 
   /**
    * ~    c
-   * s(0) -> {δ(s, c)}
+   * s(0) -> δ(s, c)
    * 
    * @param {symbol} state {s|s ∈ FinitAutomata.states}
    * @param {number} index {c|c ∈ FinitAutomata.alphabets}
@@ -131,8 +131,8 @@ export class DeterministicFiniteAutomata {
   stringifyMappings() {
     const reversed = new Map(Array.from(this.alphabets, ([v, k]) => [k, v]));
     let str = "";
-    for (const [state, map] of this.mappings) {
-      for (const [index, states] of map) {
+    for (const [state1, map] of this.mappings) {
+      for (const [index, state2] of map) {
         let alpha;
         rev: switch (index) {
           case KnownMappings.epsilon: {
@@ -149,10 +149,7 @@ export class DeterministicFiniteAutomata {
           }
         }
         
-        const prefix = `${state.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => `;
-        for (const sym of [states]) {
-          str += `${prefix}${sym.description}\n`;
-        }
+        str += `${state1.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => ${state2.description}\n`;
       }
     }
     

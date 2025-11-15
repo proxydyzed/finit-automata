@@ -30,6 +30,15 @@ export class NondeterministicFiniteAutomata {
    * @param {number} index {c|c ∈ FinitAutomata.alphabets}
    */
   delta(state, index) {
+    if (typeof state !== "symbol") {
+      throw new TypeError(`Expected argument "state" to be <symbol>, but got ${typeof state === "object" ? (state.constructor?.name ?? "null") : typeof state}`);
+    }
+    if (typeof index === "string") {
+      index = this.addAlphabet(index);
+    } else if (typeof index !== "number") {
+      throw new TypeError(`Expected argument "index" to be <string|number>, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof index}`);
+    }
+
     if (state === ErrorState) {
       return null;
     }
@@ -48,6 +57,9 @@ export class NondeterministicFiniteAutomata {
   }
   
   addAlphabet(alpha) {
+    if (typeof alpha !== "string") {
+      throw new TypeError(`Expected argument "alpha" to be <string>, but got ${typeof alpha === "object" ? (alpha.constructor?.name ?? "null") : typeof state}`);
+    }
     if (this.alphabets.has(alpha)) {
       return this.alphabets.get(alpha);
     }
@@ -64,6 +76,14 @@ export class NondeterministicFiniteAutomata {
     return state;
   }
   
+  appendVertex(state) {
+    if (typeof state !== "symbol") {
+      throw new TypeError(`Expected argument "state" to be symbol, but got ${typeof state === "object" ? (state.constructor?.name ?? "null") : typeof state}`);
+    }
+    this.states.add(state);
+    this.mappings.set(state, new Map());
+  }
+
   addEdge(index, state1, state2) {
     const mappings = this.mappings.get(state1);
     if (mappings.has(index)) {
