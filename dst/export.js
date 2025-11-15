@@ -1,6 +1,8 @@
 export {
   ErrorState,
   FiniteAutomata,
+  KnownMappings,
+  KnownMappingsSize,
 } from "./fa.js";
 
 export {

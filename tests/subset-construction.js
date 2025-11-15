@@ -1,7 +1,9 @@
 import { FixedColumnTable } from "./tables.js";
-import { NondeterministicFiniteAutomata, KnownMappings } from "./nfa.js";
+import { NondeterministicFiniteAutomata } from "./nfa.js";
 import { DeterministicFiniteAutomata } from "./dfa.js";
-import { FiniteAutomata, ErrorState } from "../dst/export.js";
+import {
+  KnownMappings,
+} from "../dst/export.js";
 
 export const EmptySet = Symbol("empty");
 

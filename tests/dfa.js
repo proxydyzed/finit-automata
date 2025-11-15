@@ -1,8 +1,8 @@
-import { ErrorState } from "../dst/export.js";
 import {
+  ErrorState,
   KnownMappings,
   KnownMappingsSize,
-} from "./nfa.js";
+} from "../dst/export.js";
 
 export class DeterministicFiniteAutomata {
   start;
@@ -77,6 +77,9 @@ export class DeterministicFiniteAutomata {
   }
   
   appendVertex(state) {
+    if (typeof state !== "symbol") {
+      throw new TypeError(`Expected argument "state" to be symbol, but got ${typeof state === "object" ? (state.constructor?.name ?? "null") : typeof state}`);
+    }
     this.states.add(state);
     this.mappings.set(state, new Map());
   }

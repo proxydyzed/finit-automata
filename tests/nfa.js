@@ -1,11 +1,8 @@
-import { ErrorState } from "../dst/export.js";
-
-export const KnownMappings = Object.freeze({
-  epsilon: 0,
-  sigma: 1,
-});
-
-export const KnownMappingsSize = 2;
+import {
+  ErrorState,
+  KnownMappings,
+  KnownMappingsSize,
+} from "../dst/export.js";
 
 export class NondeterministicFiniteAutomata {
   start;
