@@ -1,6 +1,5 @@
 export {
   ErrorState,
-  FiniteAutomata,
   KnownMappings,
   KnownMappingsSize,
 } from "./fa.js";
@@ -12,10 +11,6 @@ export {
 export {
   NondeterministicFiniteAutomata,
 } from "./nfa.js";
-
-export {
-  StateGraph,
-} from "./graph.js";
 
 export {
   ExhaustiveRecognizer,
