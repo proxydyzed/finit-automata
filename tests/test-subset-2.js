@@ -4,38 +4,7 @@ import { FiniteAutomata, ErrorState, ExhaustiveRecognizer } from "../dst/export.
 import { subsetConstruction, EmptySet, setsAreEqual, unionOfSets } from "./subset-construction.js";
 
 try {
-  const nfa = new NondeterministicFiniteAutomata("n0");
-
-  // NFA for the RE "a(b|c)*"
-  const n0 = nfa.start;
-  const n1 = nfa.addVertex("n1");
-  const n2 = nfa.addVertex("n2");
-  const n3 = nfa.addVertex("n3");
-  const n4 = nfa.addVertex("n4");
-  const n5 = nfa.addVertex("n5");
-  const n6 = nfa.addVertex("n6");
-  const n7 = nfa.addVertex("n7");
-  const n8 = nfa.addVertex("n8");
-  const n9 = nfa.addVertex("n9");
-
-  const a = nfa.addAlphabet("a");
-  const b = nfa.addAlphabet("b");
-  const c = nfa.addAlphabet("c");
-
-  nfa.addEdge(a, n0, n1);
-  nfa.addEdge(KnownMappings.epsilon, n1, n2);
-  nfa.addEdge(KnownMappings.epsilon, n2, n3);
-  nfa.addEdge(KnownMappings.epsilon, n2, n9);
-  nfa.addEdge(KnownMappings.epsilon, n3, n4);
-  nfa.addEdge(KnownMappings.epsilon, n3, n6);
-  nfa.addEdge(b, n4, n5);
-  nfa.addEdge(KnownMappings.epsilon, n5, n8);
-  nfa.addEdge(c, n6, n7);
-  nfa.addEdge(KnownMappings.epsilon, n7, n8);
-  nfa.addEdge(KnownMappings.epsilon, n8, n3);
-  nfa.addEdge(KnownMappings.epsilon, n8, n9);
-
-  nfa.accepting.add(n9);
+  const nfa = setup1();
   // console.log(JSON.stringify(nfa, null, 4));
   // console.log(nfa.stringifyMappings());
 
@@ -43,32 +12,46 @@ try {
   const recognizer = new ExhaustiveRecognizer(dfa);
 
   console.log(dfa);
-  console.log(recognizer.accepts("abcbbcbbcccbcb"));
+  console.log(recognizer.accepts("01000"));
 
-  // const dfa2 = minimizeDfa(dfa);
+  const dfa2 = minimizeDfa(dfa);
 } catch (error) {
   console.error(error);
 }
 
 function minimizeDfa(dfa) {
-  const labels = new Map(Array.from(dfa.states, state => [state, dfa.accepting.has(state) ? 1 : 0]));
+  const dfa2 = new FiniteAutomata();
 
-  while (true) {
+  const accepting = dfa.accepting;
+  const nonAccepting = new Set();
+
+  for (const state of dfa.states) {
+    if (state !== ErrorState && !accepting.has(state)) {
+      nonAccepting.add(state);
+    }
+  }
+
+  const partition = [accepting, nonAccepting];
+  const worklist = [accepting, nonAccepting];
+  let worklistIndex = 0;
+
+  while (worklist.length > worklistIndex) {
+    const workset = worklist.at(worklistIndex);
+    worklistIndex++;
+
     for (const alpha of dfa.alphabets) {
+      const X = new Set();
+      for (const state of dfa.states) {
+        const imageState = dfa.delta(state, alpha);
+        if (imageState !== ErrorState && workset.has(imageState)) {
+          X.add(state);
+        }
+      }
 
+      console.log(X);
     }
   }
 }
-//   const dfa2 = new FiniteAutomata();
-//   const accepting    = dfa.accepting;
-//   const nonAccepting = new Set();
-
-//   for (const state of dfa.states) {
-//     if (state !== ErrorState && !accepting.has(state)) {
-//       nonAccepting.add(state);
-//     }
-//   }
-
 //   const partition = new Set([accepting, nonAccepting]);
 //   const worklist  = [accepting, nonAccepting];
 //   let worklistIndex = 0;
@@ -174,6 +157,76 @@ function minimizeDfa(dfa) {
 //   });
 // }
 
+function setup1() {
+  const nfa = new NondeterministicFiniteAutomata("n0");
+
+  // NFA for the RE "a(b|c)*"
+  const n0 = nfa.start;
+  const n1 = nfa.addVertex("n1");
+  const n2 = nfa.addVertex("n2");
+  const n3 = nfa.addVertex("n3");
+  const n4 = nfa.addVertex("n4");
+  const n5 = nfa.addVertex("n5");
+  const n6 = nfa.addVertex("n6");
+  const n7 = nfa.addVertex("n7");
+  const n8 = nfa.addVertex("n8");
+  const n9 = nfa.addVertex("n9");
+
+  const a = nfa.addAlphabet("a");
+  const b = nfa.addAlphabet("b");
+  const c = nfa.addAlphabet("c");
+
+  nfa.addEdge(a, n0, n1);
+  nfa.addEdge(KnownMappings.epsilon, n1, n2);
+  nfa.addEdge(KnownMappings.epsilon, n2, n3);
+  nfa.addEdge(KnownMappings.epsilon, n2, n9);
+  nfa.addEdge(KnownMappings.epsilon, n3, n4);
+  nfa.addEdge(KnownMappings.epsilon, n3, n6);
+  nfa.addEdge(b, n4, n5);
+  nfa.addEdge(KnownMappings.epsilon, n5, n8);
+  nfa.addEdge(c, n6, n7);
+  nfa.addEdge(KnownMappings.epsilon, n7, n8);
+  nfa.addEdge(KnownMappings.epsilon, n8, n3);
+  nfa.addEdge(KnownMappings.epsilon, n8, n9);
+
+  nfa.accepting.add(n9);
+
+  return nfa;
+}
+
+function setup2() {
+  const nfa = new NondeterministicFiniteAutomata("a");
+
+  const na = nfa.start;
+  const nb = nfa.addVertex("b");
+  const nc = nfa.addVertex("c");
+  const nd = nfa.addVertex("d");
+  const ne = nfa.addVertex("e");
+  const nf = nfa.addVertex("f");
+
+  const a0 = nfa.addAlphabet("0");
+  const a1 = nfa.addAlphabet("1");
+
+  nfa.addEdge(a1, na, nc);
+  nfa.addEdge(a0, na, nb);
+  nfa.addEdge(a0, nb, na);
+  nfa.addEdge(a1, nb, nd);
+  nfa.addEdge(a0, nc, ne);
+  nfa.addEdge(a1, nc, nf);
+  nfa.addEdge(a0, nd, ne);
+  nfa.addEdge(a1, nd, nf);
+  nfa.addEdge(a0, ne, ne);
+  nfa.addEdge(a1, ne, nf);
+  nfa.addEdge(a0, nf, nf);
+  nfa.addEdge(a1, nf, nf);
+
+  nfa.accepting.add(nc);
+  nfa.accepting.add(nd);
+  nfa.accepting.add(ne);
+
+  return nfa;
+}
+
 function intersection(set1, set2) {
   const set = new Set();
   for (const elem of set1) {
@@ -193,97 +246,3 @@ function subtraction(set1, set2) {
 
   return set;
 }
-
-/*py
-import collections
-
-DFA = collections.namedtuple("DFA", ("Q", "Sigma", "delta", "q_0", "F"))
-
-
-# Minimizes the given DFA. To avoid making this function more complicated, I've
-# assumed that the input contains no dead states.
-def minimize(dfa):
-    # Input state labeling. Two states are distinguishable iff they have
-    # different labels.
-    labels = {q: (1 if q in dfa.F else 0) for q in dfa.Q}
-
-    # Refine the labels until we reach a fixed point.
-    while True:
-        label_count = len(set(labels.values()))
-        for sigma in dfa.Sigma:
-            # Extend each label by the label of the successor state after sigma.
-            labels = {
-                q: (label, labels.get(dfa.delta.get((q, sigma))))
-                for (q, label) in labels.items()
-            }
-            # Renumber for a compact representation. In another language, we'd
-            # do these steps at the same time.
-            labels = renumber_labels(labels)
-        if len(set(labels.values())) <= label_count:
-            # Arrived at a fixed point.
-            break
-
-    # Compute the new transition function.
-    delta = {}
-    for q in dfa.Q:
-        for sigma in dfa.Sigma:
-            q_prime = dfa.delta.get((q, sigma))
-            if q_prime is not None:
-                delta[(labels[q], sigma)] = labels[q_prime]
-
-    return DFA(
-        Q=set(labels.values()),
-        Sigma=dfa.Sigma,
-        delta=delta,
-        q_0=labels[dfa.q_0],
-        F={labels[q] for q in dfa.F},
-    )
-
-
-def renumber_labels(labels):
-    label_numbers = {}
-    for label in labels.values():
-        label_numbers.setdefault(label, len(label_numbers))
-    return {q: label_numbers[label] for (q, label) in labels.items()}
-
-
-a = "a"
-b = "b"
-c = "c"
-print(
-    minimize(
-        DFA(
-            Q={0, 1, 2, 3},
-            Sigma={a, b, c},
-            delta={
-                (0, a): 1,
-                (1, b): 2,
-                (1, c): 3,
-                (2, b): 2,
-                (2, c): 3,
-                (3, b): 2,
-                (3, c): 3,
-            },
-            q_0=0,
-            F={1, 2, 3},
-        )
-    )
-)
-print(
-    minimize(
-        DFA(
-            Q={0, 1, 2, 3},
-            Sigma={a, b, c},
-            delta={(0, a): 1, (1, b): 2, (1, c): 3, (3, c): 3},
-            q_0=0,
-            F={1, 2, 3},
-        )
-    )
-)
-*/
-
-/*
-OUTPUT:
-DFA(Q={0, 1}, Sigma={'a', 'c', 'b'}, delta={(0, 'a'): 1, (1, 'c'): 1, (1, 'b'): 1}, q_0=0, F={1})
-DFA(Q={0, 1, 2, 3}, Sigma={'a', 'c', 'b'}, delta={(0, 'a'): 1, (1, 'c'): 3, (1, 'b'): 2, (3, 'c'): 3}, q_0=0, F={1, 2, 3})
-*/
