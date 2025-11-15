@@ -1,5 +1,6 @@
 import { FixedColumnTable } from "./tables.js";
-import { KnownMappings } from "./nfa.js";
+import { NondeterministicFiniteAutomata, KnownMappings } from "./nfa.js";
+import { DeterministicFiniteAutomata } from "./dfa.js";
 import { FiniteAutomata, ErrorState } from "../dst/export.js";
 
 export const EmptySet = Symbol("empty");
@@ -45,32 +46,37 @@ export function subsetConstruction(nfa) {
     }
   }
 
-  return makeDfa(nfa, entries, table, alphabets.map(([k]) => k));
+  return makeDfa(nfa, entries, table, alphabets);
 }
 
+/**
+ * @param {NondeterministicFiniteAutomata} nfa
+ * @param {Entry[]} entries
+ * @param {FixedColumnTable} table
+ * @param {[string, number][]} alphabets
+ * 
+ */
 function makeDfa(nfa, entries, table, alphabets) {
   const reversed = new Map(Array.from(nfa.alphabets, ([v, k]) => [k, v]));
   reversed.set(KnownMappings.epsilon, "∈");
   reversed.set(KnownMappings.sigma, "∑");
 
-  const dfa = new FiniteAutomata()
+  const dfa = new DeterministicFiniteAutomata(entries[0].name);
   for (const [alpha, index] of alphabets) {
-    dfa.alphabets.add(alpha);
+    dfa.alphabets.set(alpha, index);
   }
-
-  dfa.start = entries[0].name;
-  dfa.states = new Set([ErrorState, dfa.start]);
-  dfa.mappings.clear();
 
   for (const { name: state } of entries) {
-    dfa.states.add(state);
-    dfa.mappings.set(state, new Map());
+    dfa.appendVertex(state);
   }
 
+  // console.log(entries.map(String).join("\n"));
+
   for (const { name: q, states } of entries) {
-    for (const state of states) {
+    inner: for (const state of states) {
       if (nfa.accepting.has(state)) {
         dfa.accepting.add(q);
+        break inner;
       }
     }
   }
@@ -81,10 +87,10 @@ function makeDfa(nfa, entries, table, alphabets) {
     for (const { deref: state2 } of row) {
       if (state2 !== EmptySet) {
         const { name: state1 } = entries.at(rowCount);
-        const alpha = alphabets.at(colCount);
-
+        const [alpha, index] = alphabets.at(colCount);
+        
         // console.log(`${state1.description} + ${alpha} -> ${state2.description}`);
-        dfa.mappings.get(state1).set(alpha, state2);
+        dfa.addEdge(index, state1, state2);
       }
       colCount++;
     }
@@ -106,6 +112,10 @@ class Entry {
   constructor(name, states) {
     this.name = name;
     this.states = states;
+  }
+  
+  toString() {
+    return `${this.name.description} => {${Array.from(this.states, state => state.description).join()}}`;
   }
 }
 

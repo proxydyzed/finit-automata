@@ -4,6 +4,27 @@ import { DeterministicFiniteAutomata } from "./dfa.js";
 import { FiniteAutomata, ErrorState, ExhaustiveRecognizer } from "../dst/export.js";
 import { subsetConstruction, EmptySet, setsAreEqual, unionOfSets } from "./subset-construction.js";
 
+class PartitionEntry {
+  name;
+  states;
+  members;
+  
+  /**
+   * @param {symbol} name
+   * @param {Set<symbol>} states
+   * @param {symbol[]} members
+   */
+  constructor(name, states, members) {
+    this.name = name;
+    this.states = states;
+    this.members = members;
+  }
+  
+  toString() {
+    return `PartitionEntry{ name: ${this.name.description}, states: Set{${Array.from(this.states, state => state.description).join()}}, members: [${this.members.map(member => member.description).join()}] }`;
+  }
+}
+
 try {
   const nfa = setup1();
   // console.log(JSON.stringify(nfa, null, 4));
@@ -12,7 +33,8 @@ try {
   const dfa = subsetConstruction(nfa);
   // const dfa = setup3();
   const recognizer = new ExhaustiveRecognizer(dfa);
-
+  
+  console.assert(recognizer.accepts("a"),   `Failed to recognize "a"`);
   // console.log(dfa);
   // console.assert(recognizer.accepts("fie"),   `Failed to recognize "fie"`);
   // console.assert(recognizer.accepts("fee"),   `Failed to recognize "fee"`);
@@ -20,9 +42,9 @@ try {
   // console.assert(!recognizer.accepts("feee"), `Failed to recognize "feee"`);
   // console.assert(!recognizer.accepts("fii"),  `Failed to recognize "fii"`);
 
-  const dfa2 = minimizeDfa(dfa);
+  const dfa2 = minimizeDfa2(dfa);
 } catch (error) {
-  console.error(error);
+  console.error(error.stack);
 }
 
 
@@ -112,6 +134,34 @@ end;
 
 */
 
+/**
+ * @param {DeterministicFiniteAutomata} dfa
+ */
+function minimizeDfa2(dfa) {
+  const dfa2 = new DeterministicFiniteAutomata(Symbol("start"));
+
+  const accepting = dfa.accepting;
+  const nonAccepting = new Set(Array.from({ length: 0 }, () => Symbol("")));
+
+  for (const state of dfa.states) {
+    if (state !== ErrorState && !accepting.has(state)) {
+      nonAccepting.add(state);
+    }
+  }
+  
+  try {
+  const worklist = [accepting, nonAccepting];
+  let partitionEntries = worklist.map((workset, i) => new PartitionEntry(Symbol(`m${i}`), workset, []));
+  console.log(partitionEntries.join("\n"));
+  
+  } catch (error) {
+    console.log(error.stack);
+  }
+}
+
+/**
+ * @param {DeterministicFiniteAutomata} dfa
+ */
 function minimizeDfa(dfa) {
   const dfa2 = new DeterministicFiniteAutomata(Symbol("start"));
 

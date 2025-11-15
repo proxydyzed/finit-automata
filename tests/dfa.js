@@ -76,15 +76,20 @@ export class DeterministicFiniteAutomata {
     return state;
   }
   
+  appendVertex(state) {
+    this.states.add(state);
+    this.mappings.set(state, new Map());
+  }
+  
   addEdge(index, state1, state2) {
     if (typeof index !== "number") {
-      throw new TypeError(`Expected argument "index" to be <number>, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof state}`);
+      throw new TypeError(`Expected argument "index" to be number, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof index}`);
     }
     if (typeof state1 !== "symbol") {
-      throw new TypeError(`Expected argument "state1" to be <symbol>, but got ${typeof state1 === "object" ? (state1.constructor?.name ?? "null") : typeof state}`);
+      throw new TypeError(`Expected argument "state1" to be symbol, but got ${typeof state1 === "object" ? (state1.constructor?.name ?? "null") : typeof state1}`);
     }
     if (typeof state2 !== "symbol") {
-      throw new TypeError(`Expected argument "state2" to be <symbol>, but got ${typeof state2 === "object" ? (state2.constructor?.name ?? "null") : typeof state}`);
+      throw new TypeError(`Expected argument "state2" to be symbol, but got ${typeof state2 === "object" ? (state2.constructor?.name ?? "null") : typeof state2}`);
     }
 
     this.mappings.get(state1).set(index, state2);
@@ -142,7 +147,7 @@ export class DeterministicFiniteAutomata {
         }
         
         const prefix = `${state.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => `;
-        for (const sym of states) {
+        for (const sym of [states]) {
           str += `${prefix}${sym.description}\n`;
         }
       }
