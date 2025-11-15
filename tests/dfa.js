@@ -1,5 +1,5 @@
+import { ErrorState } from "../dst/export.js";
 import {
-  ErrorState,
   KnownMappings,
   KnownMappingsSize,
 } from "./nfa.js";
@@ -12,7 +12,7 @@ export class DeterministicFiniteAutomata {
   accepting;
 
   constructor(name) {
-    this.start = Symbol(String(name));
+    this.start = typeof name === "symbol" ? name : Symbol(String(name));
     this.states = new Set([ErrorState, this.start]);
 
     // JavaScript engine type-inference shenaniguns

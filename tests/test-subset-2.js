@@ -1,5 +1,6 @@
 import { FixedColumnTable } from "./tables.js";
 import { NondeterministicFiniteAutomata, KnownMappings } from "./nfa.js";
+import { DeterministicFiniteAutomata } from "./dfa.js";
 import { FiniteAutomata, ErrorState, ExhaustiveRecognizer } from "../dst/export.js";
 import { subsetConstruction, EmptySet, setsAreEqual, unionOfSets } from "./subset-construction.js";
 
@@ -9,18 +10,110 @@ try {
   // console.log(nfa.stringifyMappings());
 
   const dfa = subsetConstruction(nfa);
+  // const dfa = setup3();
   const recognizer = new ExhaustiveRecognizer(dfa);
 
-  console.log(dfa);
-  console.log(recognizer.accepts("01000"));
+  // console.log(dfa);
+  // console.assert(recognizer.accepts("fie"),   `Failed to recognize "fie"`);
+  // console.assert(recognizer.accepts("fee"),   `Failed to recognize "fee"`);
+  // console.assert(!recognizer.accepts("fe"),   `Failed to recognize "fe"`);
+  // console.assert(!recognizer.accepts("feee"), `Failed to recognize "feee"`);
+  // console.assert(!recognizer.accepts("fii"),  `Failed to recognize "fii"`);
 
   const dfa2 = minimizeDfa(dfa);
 } catch (error) {
   console.error(error);
 }
 
+
+/*
+
+for (alpha of alphabets):
+  iteration(f):
+    for (part of partition):
+      iteration({ s3, s5 }):
+        for (state of { s3, s5 }):
+          s3 + f = 0;
+          s5 + f = 0;
+        end;
+      end;
+      iteration({ s0, s1, s2, s4 }):
+        for (state of { s0, s1, s2, s4 }):
+          s0 + f = s1;
+          s1 + f = 0;
+          s2 + f = 0;
+          s4 + f = 0;
+        end;
+      end;
+    end;
+  end;
+
+  iteration(e):
+    for (part of partition):
+      iteration({ s3, s5 }):
+        for (state of { s3, s5 }):
+          s3 + e = 0;
+          s5 + e = 0;
+        end;
+      end;
+      iteration({ s0, s1, s2, s4 }):
+        for (state of { s0, s1, s2, s4 }):
+          s0 + e = 0;
+          s1 + e = s2; // partition 1
+          s2 + e = s3; // partition 0
+          s4 + e = s5; // partition 0
+        end;
+      end;
+    end;
+  end;
+end;
+
+alpha(f):
+  for (part of partion):
+    iteration(1):
+      s3 + f = 0
+      s5 + f = 0
+    end;
+
+    iteration(2):
+      s0 + f = s1
+      s1 + f = 0
+      s2 + f = 0
+      s4 + f = 0
+    end;
+  end;
+end;
+
+alpha(e):
+  for (part of partition):
+    iteration(1):
+      s3 + e = 0
+      s5 + e = 0
+    end;
+
+    iteration(2):
+      s0 + e = 0
+      s1 + e = s2
+      s2 + e = s3 // offending
+      s4 + e = s5 // offending
+    end;
+
+    iteration(n):
+      image := part[n] + alpha(@)
+      for (part2 of partition):
+        if (part2.has(image)):
+          partitionNames.get(part2).push(image);
+        end;
+      end;
+    end;
+  end;
+end;
+
+
+*/
+
 function minimizeDfa(dfa) {
-  const dfa2 = new FiniteAutomata();
+  const dfa2 = new DeterministicFiniteAutomata(Symbol("start"));
 
   const accepting = dfa.accepting;
   const nonAccepting = new Set();
@@ -31,131 +124,48 @@ function minimizeDfa(dfa) {
     }
   }
 
-  const partition = [accepting, nonAccepting];
-  const worklist = [accepting, nonAccepting];
-  let worklistIndex = 0;
+  let partition = [accepting, nonAccepting];
+  for (const [alpha] of dfa.alphabets) {
+    const newPartition = [];
+    console.log(`alpha: ${alpha}`);
 
-  while (worklist.length > worklistIndex) {
-    const workset = worklist.at(worklistIndex);
-    worklistIndex++;
+    for (const states of partition) {
+      console.log(`states: {${Array.from(states, state => state.description)}}`);
+      const partitionEntries = partition.map(states => ({ members: [], states: states }));
+      const noPartitionMembers = [];
 
-    for (const alpha of dfa.alphabets) {
-      const X = new Set();
-      for (const state of dfa.states) {
-        const imageState = dfa.delta(state, alpha);
-        if (imageState !== ErrorState && workset.has(imageState)) {
-          X.add(state);
+      for (const state of states) {
+        const image = dfa.delta(state, alpha);
+        console.log(`${state.description} + ${alpha} = ${image.description}`);
+        if (image === ErrorState) {
+          noPartitionMembers.push(state);
+        } else {
+          for (const entry2 of partitionEntries) {
+            if (entry2.states.has(image)) {
+              entry2.members.push(state);
+            }
+          }
         }
       }
 
-      console.log(X);
+      const newPartitionEntries = partitionEntries.filter(entry => entry.members.length > 0);
+      // if one of them is zero, the partition is not divided
+      const partitionIsDivided = newPartitionEntries.length * noPartitionMembers.length !== 0;
+      for (const { members } of newPartitionEntries) {
+        newPartition.push(new Set(members));
+      }
+      if (noPartitionMembers.length > 0) {
+        newPartition.push(new Set(noPartitionMembers));
+      }
+
+      console.log("New Partition:", newPartition);
     }
+
+    partition = newPartition;
   }
+
+  console.log("Final:", partition);
 }
-//   const partition = new Set([accepting, nonAccepting]);
-//   const worklist  = [accepting, nonAccepting];
-//   let worklistIndex = 0;
-
-//   while (worklist.length > worklistIndex) {
-//     const workset = worklist.at(worklistIndex);
-//     worklistIndex++;
-
-//     // partion has one or lesser states, thee is no chance of inconsistency
-//     if (workset.size < 2) {
-//       continue;
-//     }
-
-//     for (const alpha of dfa.alphabets) {
-//       const image = new Set();
-//       const reverseImage = new Map();
-//       for (const state of workset) {
-//         const deltaState = dfa.delta(state, alpha);
-//         image.add(deltaState);
-//         reverseImage.set(deltaState, state);
-//       }
-
-//       // const image = new Set(Array.from(workset, state => dfa.delta(state, alpha)));
-//       q: for (const part of partition) {
-//         const part1 = new Set(Array.from(part).filter(p =>  image.has(p)));
-//         const part2 = new Set(Array.from(part).filter(p => !image.has(p)));
-
-//         if (part1.size > 0 && part2.size > 0) {
-
-//         }
-//       }
-
-//     }
-//   }
-//   console.log(partition);
-// }
-
-//   let   partition = new Set([dfa.accepting, nonAccepting]);
-//   const nextP     = new Set([dfa.accepting, nonAccepting]);
-//   const worklist  = [dfa.accepting, nonAccepting];
-//   let worklistIndex = 0;
-
-//   const dfaStates = Array.from(dfa.states);
-//   while (worklist.length > worklistIndex) {
-//     const s = worklist.at(worklistIndex);
-//     worklistIndex++;
-//     if (s === null) {
-//       continue;
-//     }
-
-//     for (const c of dfa.alphabets) {
-//       console.log(dfa.alphabets)
-//       const image = new Set(dfaStates.filter(state => s.has(dfa.delta(state, c))));
-//       part: for (const q of partition) {
-//         const q1 = intersection(q, image);
-//         const q2 = subtraction(q, q1);
-
-
-//         if (q1.size !== 0 && q2.size !== 0) {
-//           inner: for (const elem of partition) {
-//             if (setsAreEqual(elem, q)) {
-//               partition.delete(elem);
-//               break inner;
-//             }
-//           }
-
-//           inner: for (const elem of nextP) {
-//             if (setsAreEqual(elem, q)) {
-//               nextP.delete(elem);
-//               break inner;
-//             }
-//           }
-
-//           nextP.add(q1);
-//           nextP.add(q2);
-
-//           const index = worklist.findIndex(workset => setsAreEqual(workset, q));
-//           if (index !== -1) {
-//             // removes q; adds q1 and q2.
-//             worklist[index] = null;
-//             worklist.push(q1);
-//             worklist.push(q2);
-//           } else if (q1.size < q2.size) {
-//             worklist.push(q1);
-//           } else {
-//             worklist.push(q2);
-//           }
-
-//           if (setsAreEqual(s, q)) {
-//             break part;
-//           }
-//         }
-//       }
-//     }
-
-//     partition = new Set(nextP);
-//   }
-
-//   console.log({
-//     partition,
-//     nextP,
-//     worklist,
-//   });
-// }
 
 function setup1() {
   const nfa = new NondeterministicFiniteAutomata("n0");
@@ -225,6 +235,33 @@ function setup2() {
   nfa.accepting.add(ne);
 
   return nfa;
+}
+
+function setup3() {
+  // NFA for RE "fee|fie"
+  const dfa = new DeterministicFiniteAutomata(Symbol("s0"));
+
+  const s0 = dfa.start;
+  const s1 = dfa.addVertex("s1");
+  const s2 = dfa.addVertex("s2");
+  const s3 = dfa.addVertex("s3");
+  const s4 = dfa.addVertex("s4");
+  const s5 = dfa.addVertex("s5");
+
+  const f = dfa.addAlphabet("f");
+  const e = dfa.addAlphabet("e");
+  const i = dfa.addAlphabet("i");
+
+  dfa.addEdge(f, s0, s1);
+  dfa.addEdge(e, s1, s2);
+  dfa.addEdge(i, s1, s4);
+  dfa.addEdge(e, s2, s3);
+  dfa.addEdge(e, s4, s5);
+
+  dfa.accepting.add(s3);
+  dfa.accepting.add(s5);
+
+  return dfa;
 }
 
 function intersection(set1, set2) {

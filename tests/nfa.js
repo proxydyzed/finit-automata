@@ -1,4 +1,4 @@
-export const ErrorState = Symbol("error");
+import { ErrorState } from "../dst/export.js";
 
 export const KnownMappings = Object.freeze({
   epsilon: 0,
@@ -15,7 +15,7 @@ export class NondeterministicFiniteAutomata {
   accepting;
 
   constructor(name) {
-    this.start = Symbol(String(name));
+    this.start = typeof name === "symbol" ? name : Symbol(String(name));
     this.states = new Set([ErrorState, this.start]);
 
     // JavaScript engine type-inference shenaniguns
