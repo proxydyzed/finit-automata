@@ -1,13 +1,10 @@
-export const ErrorState = Symbol("error");
+import {
+  ErrorState,
+  KnownMappings,
+  KnownMappingsSize,
+} from "./nfa.js";
 
-export const KnownMappings = Object.freeze({
-  epsilon: 0,
-  sigma: 1,
-});
-
-export const KnownMappingsSize = 2;
-
-export class NondeterministicFiniteAutomata {
+export class DeterministicFiniteAutomata {
   start;
   states;
   mappings;
@@ -19,7 +16,7 @@ export class NondeterministicFiniteAutomata {
     this.states = new Set([ErrorState, this.start]);
 
     // JavaScript engine type-inference shenaniguns
-    const map = new Map(Array.from({ length: 0 }, () => [0, [Symbol("")]]));
+    const map = new Map(Array.from({ length: 0 }, () => [0, Symbol("")]));
     this.mappings = new Map([[this.start, map]]);
     this.alphabets = new Map(Array.from({ length: 0 }, () => ["", 0]));
     this.accepting = new Set(Array.from({ length: 0 }, () => Symbol("")));
@@ -33,10 +30,19 @@ export class NondeterministicFiniteAutomata {
    * @param {number} index {c|c ∈ FinitAutomata.alphabets}
    */
   delta(state, index) {
-    if (state === ErrorState) {
-      return null;
+    if (typeof state !== "symbol") {
+      throw new TypeError(`Expected argument "state" to be <symbol>, but got ${typeof state === "object" ? (state.constructor?.name ?? "null") : typeof state}`);
     }
-    
+    if (typeof index === "string") {
+      index = this.addAlphabet(index);
+    } else if (typeof index !== "number") {
+      throw new TypeError(`Expected argument "index" to be <string|number>, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof index}`);
+    }
+
+    if (state === ErrorState) {
+      return ErrorState;
+    }
+
     const mapping = this.mappings.get(state);
     if (mapping.has(index)) {
       // if (mapping.has(KnownMappings.sigma)) {
@@ -47,10 +53,13 @@ export class NondeterministicFiniteAutomata {
     // if (mapping.has(KnownMappings.sigma)) {
     //   return mapping.get(KnownMappings.sigma);
     // }
-    return null;
+    return ErrorState;
   }
   
   addAlphabet(alpha) {
+    if (typeof alpha !== "string") {
+      throw new TypeError(`Expected argument "alpha" to be <string>, but got ${typeof alpha === "object" ? (alpha.constructor?.name ?? "null") : typeof state}`);
+    }
     if (this.alphabets.has(alpha)) {
       return this.alphabets.get(alpha);
     }
@@ -68,12 +77,17 @@ export class NondeterministicFiniteAutomata {
   }
   
   addEdge(index, state1, state2) {
-    const mappings = this.mappings.get(state1);
-    if (mappings.has(index)) {
-      mappings.get(index).push(state2);
-    } else {
-      mappings.set(index, [state2]);
+    if (typeof index !== "number") {
+      throw new TypeError(`Expected argument "index" to be <number>, but got ${typeof index === "object" ? (index.constructor?.name ?? "null") : typeof state}`);
     }
+    if (typeof state1 !== "symbol") {
+      throw new TypeError(`Expected argument "state1" to be <symbol>, but got ${typeof state1 === "object" ? (state1.constructor?.name ?? "null") : typeof state}`);
+    }
+    if (typeof state2 !== "symbol") {
+      throw new TypeError(`Expected argument "state2" to be <symbol>, but got ${typeof state2 === "object" ? (state2.constructor?.name ?? "null") : typeof state}`);
+    }
+
+    this.mappings.get(state1).set(index, state2);
   }
 
   toJSON() {
@@ -94,9 +108,7 @@ export class NondeterministicFiniteAutomata {
           value: Array.from(map, function([k, v]) {
             return {
               key: k,
-              value: v.map(function(sym) {
-                return stateMap.get(sym);
-              }),
+              value: stateMap.get(v),
             };
           }),
         };
