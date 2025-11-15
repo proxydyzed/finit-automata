@@ -1,6 +1,6 @@
-import { FixedColumnTable } from "./tables.js";
 import {
   KnownMappings,
+  FixedColumnTable,
   NondeterministicFiniteAutomata,
   DeterministicFiniteAutomata,
 } from "../dst/export.js";

@@ -18,3 +18,7 @@ export {
   Token,
   InvalidCharError,
 } from "./recognizer.js";
+
+export {
+  FixedColumnTable,
+} from "./tables.js";
