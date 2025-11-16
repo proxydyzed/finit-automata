@@ -1,6 +1,7 @@
 import {
   ErrorState,
   WorkList,
+  DeterministicFiniteAutomata,
 } from "../dst/export.js";
 
 const DEBUG = false;
@@ -38,7 +39,12 @@ export function minimizeDfa(dfa) {
     }
   }
 
-  return context;
+  if (DEBUG) {
+    console.log(context);
+    console.log(context.partitions.join("\n"));
+  }
+
+  return context.toDfa();
 }
 
 /**
@@ -109,15 +115,28 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
       } else {
         bucket.set(partition.name, [state]);
       }
-
-      if (DEBUG) {
-        console.log(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | ${String(partition)}`);
-      }
     } else {
       errorBucket.push(state);
-      if (DEBUG) {
-        console.log(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | Dead state`);
+    }
+
+    if (DEBUG) {
+      let stateDescription = state.description;
+      let imageDescription = image.description;
+      let partitionName = "Dead state";
+
+      if (dfa.accepting.has(state)) {
+        stateDescription = `(${stateDescription})`;
       }
+      if (dfa.accepting.has(image)) {
+        imageDescription = `(${imageDescription})`;
+      }
+
+      if (image !== ErrorState) {
+        const partition = partitions.at(names.get(image));
+        partitionName = String(partition);
+      }
+
+      console.log(`  ${stateDescription.padEnd(5, " ")} + "${alpha}" => ${imageDescription.padEnd(5, " ")} | ${partitionName}`);
     }
   }
 
@@ -156,6 +175,10 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
       console.log(" ", String(partition));
     }
     
+    if (!ctx.worklist.has(partitionIndex)) {
+      ctx.worklist.add(partitionIndex);
+    }
+
     for (const states of temp) {
       ctx.addPartition(states);
     }
@@ -259,6 +282,49 @@ export class MinimizationContext {
     }
 
     reachable.clear();
+  }
+
+  toDfa() {
+    const { partitions, names, reachable, dfa: _dfa } = this;
+    const { start: _start, accepting, alphabets: _alphabets } = _dfa;
+
+    const start = partitions.at(names.get(_start)).name;
+    const dfa = new DeterministicFiniteAutomata(start);
+
+    for (const { name, states } of partitions) {
+      if (name !== start) {
+        dfa.appendVertex(name);
+      }
+
+      const [state] = states;
+      if (accepting.has(state)) {
+        dfa.accepting.add(name);
+      }
+    }
+
+    const alphabets = Array.from(_alphabets);
+
+    for (const [alpha, index] of alphabets) {
+      dfa.alphabets.set(alpha, index);
+    }
+
+    for (const partitionA of this.partitions) {
+      // all states in a partition behave the same and
+      // there is at least 1 state in every partition.
+      const [state1] = partitionA.states;
+      for (const [alpha, index] of alphabets) {
+        // doing the delta for 1 state in this partition is
+        // equivalent to doing all of them.
+        const state2 = _dfa.delta(state1, index);
+        if (state2 !== ErrorState) {
+          const partitionB = partitions.at(names.get(state2));
+          dfa.addEdge(index, partitionA.name, partitionB.name);
+          console.log(`${partitionA} + ${alpha} => ${partitionB}`);
+        }
+      }
+    }
+
+    return dfa;
   }
 }
 
