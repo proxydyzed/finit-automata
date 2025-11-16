@@ -9,13 +9,18 @@ import {
 export const EmptySet = Symbol("empty");
 
 export class Subset {
+  nfa;
   table;
   entries;
   worklist;
   alphabets;
 
+  /**
+   * @param {NondeterministicFiniteAutomata} nfa
+   */
   constructor(nfa) {
-    this.table = new FixedColumnTable(nfa.alphabets.size);
+    this.nfa = nfa;
+    this.table = new FixedColumnTable(nfa.alphabets.size, () => 0);
     this.entries = Array.from({ length: 0 }, () => new Entry(
       // corresponding dfa state
       Symbol(""),
@@ -24,9 +29,32 @@ export class Subset {
     ));
 
     this.alphabets = Array.from(nfa.alphabets);
-    this.worklist = new WorkList([]);
+    this.worklist = new WorkList(Array.from({ length: 0 }, () => 0));
   }
+  
+  /* *
+   * @param {Set<symbol>} states
+   * /
+  addEntry(states, elem) {
+    const name = Symbol(`d${this.entries.length}`);
+    this.worklist.push(this.entries.length);
+    this.entries.push(new Entry(name, states));
+    return name;
+  }
+  */
 };
+
+export function nfa2dfa(nfa) {
+  if (!(nfa instanceof NondeterministicFiniteAutomata)) {
+    throw new TypeError(`Expected NondeterministicFiniteAutomata, but got ${typeof nfa === "object" ? (nfa.constructor?.name ?? "null") : typeof nfa}`);
+  }
+  
+  const subset = new Subset(nfa);
+  // for (const )
+  for (const index of subset.worklist.iter()) {
+    
+  }
+}
 
 /**
  * @param {NondeterministicFiniteAutomata} nfa

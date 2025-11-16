@@ -198,7 +198,7 @@ export class MinimizationContext {
       // partition array index
       0,
     ]));
-    this.worklist = new WorkList([]);
+    this.worklist = new WorkList(Array.from({ length: 0 }, () => 0));
     this.reachable = new Map(Array.from({ length: 0 }, () => [
       // partition name
       Symbol(""),

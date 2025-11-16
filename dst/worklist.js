@@ -1,7 +1,13 @@
+/**
+ * @template Work
+ */
 export class WorkList {
   buffer;
   index = 0;
-
+  
+  /**
+   * @param {Work[]} buffer
+   */
   constructor(buffer) {
     this.buffer = buffer;
   }
@@ -10,6 +16,13 @@ export class WorkList {
     while (this.buffer.length > this.index) {
       this.index++;
       yield this.buffer.at(this.index - 1);
+    }
+  }
+  
+  *iter() {
+    while (this.buffer.length > this.index) {
+      this.index++;
+      yield this.buffer[this.index - 1];
     }
   }
 

@@ -1,13 +1,21 @@
+/**
+ * @template Elem
+ */
 export class FixedColumnTable {
-  buffer = Array.from({ length: 0 }, () => new TableElementPointer(undefined));
+  buffer;
   cols;
-  rows = 0;
+  rows;
+  init;
   
   /**
    * @param {number} columns
+   * @param {() => Elem} init
    */
-  constructor(columns) {
+  constructor(columns, init) {
     this.cols = columns;
+    this.rows = 0;
+    this.init = init;
+    this.buffer = Array.from({ length: 0 }, () => new TableElementPointer(init()));
   }
 
   get(pos) {
@@ -23,7 +31,7 @@ export class FixedColumnTable {
   
   allocRow() {
     for (let i = 0; i < this.cols; i++) {
-      this.buffer.push(new TableElementPointer(undefined));
+      this.buffer.push(new TableElementPointer(this.init()));
     }
     
     this.rows++;
@@ -43,9 +51,15 @@ function* takeBuffer(buffer, offset, amount) {
   }
 }
 
+/**
+ * @template Elem
+ */
 export class TableElementPointer {
   deref;
   
+  /**
+   * @param {Elem} deref
+   */
   constructor(deref) {
     this.deref = deref;
   }

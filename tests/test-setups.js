@@ -12,7 +12,7 @@ import {
 import * as setups from "./setups.js";
 
 try {
-  const dfa = setups.base();
+  const dfa = setups.setup1();
   const recognizer = new ExhaustiveRecognizer(dfa);
   const entries = [
     { input: "01010", output: true },
