@@ -5,7 +5,6 @@ export class FixedColumnTable {
   buffer;
   cols;
   rows;
-  init;
   
   /**
    * @param {number} columns
@@ -14,7 +13,6 @@ export class FixedColumnTable {
   constructor(columns, init) {
     this.cols = columns;
     this.rows = 0;
-    this.init = init;
     this.buffer = Array.from({ length: 0 }, () => new TableElementPointer(init()));
   }
 
@@ -31,11 +29,15 @@ export class FixedColumnTable {
   
   allocRow() {
     for (let i = 0; i < this.cols; i++) {
-      this.buffer.push(new TableElementPointer(this.init()));
+      this.buffer.push(new TableElementPointer(undefined));
     }
     
     this.rows++;
     return this.rows - 1;
+  }
+
+  push(elem) {
+    this.buffer.push(new TableElementPointer(elem));
   }
 
   *[Symbol.iterator]() {

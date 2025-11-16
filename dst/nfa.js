@@ -145,10 +145,15 @@ export class NondeterministicFiniteAutomata {
             break rev;
           }
         }
-        
-        const prefix = `${state.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => `;
+
+        const _stateDescription = this.accepting.has(state) ? `(${state.description.padEnd(4, " ")})` : state.description.padEnd(4, " ");
+        const prefix = `${_stateDescription} + ${alpha.padEnd(4, " ")} => `;
         for (const sym of states) {
-          str += `${prefix}${sym.description}\n`;
+          if (this.accepting.has(sym)) {
+            str += `${prefix}(${sym.description})\n`;
+          } else {
+            str += `${prefix}${sym.description}\n`;
+          }
         }
       }
     }

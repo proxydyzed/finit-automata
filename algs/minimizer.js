@@ -319,7 +319,9 @@ export class MinimizationContext {
         if (state2 !== ErrorState) {
           const partitionB = partitions.at(names.get(state2));
           dfa.addEdge(index, partitionA.name, partitionB.name);
-          console.log(`${partitionA} + ${alpha} => ${partitionB}`);
+          if (DEBUG) {
+            console.log(`${partitionA} + ${alpha} => ${partitionB}`);
+          }
         }
       }
     }

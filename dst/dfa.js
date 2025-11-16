@@ -148,8 +148,9 @@ export class DeterministicFiniteAutomata {
             break rev;
           }
         }
-        
-        str += `${state1.description.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => ${state2.description}\n`;
+
+        const _stateDescription = this.accepting.has(state1) ? `(${state1.description})` : ` ${state1.description} `;
+        str += `${_stateDescription.padEnd(4, " ")} + ${alpha.padEnd(4, " ")} => ${this.accepting.has(state2) ? `(${state2.description})` : state2.description}\n`;
       }
     }
     
