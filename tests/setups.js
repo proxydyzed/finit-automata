@@ -157,8 +157,6 @@ export function setup6() {
   return subsetConstruction(nfa);
 }
 
-export const base = setup6;
-
 export function buildString(nfa, str) {
   if (!(nfa instanceof NondeterministicFiniteAutomata)) {
     throw new TypeError(`Expected NondeterministicFiniteAutomata, but got ${typeof nfa === "object" ? (nfa.constructor?.name ?? "null") : typeof nfa}`);
