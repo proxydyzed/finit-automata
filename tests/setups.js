@@ -4,7 +4,7 @@ import {
   KnownMappings,
 } from "../dst/export.js";
 import {
-  subsetConstruction,
+  nfa2dfa,
 } from "../algs/export.js";
 
 export function setup1() {
@@ -41,7 +41,7 @@ export function setup1() {
 
   nfa.accepting.add(n9);
 
-  return subsetConstruction(nfa);
+  return nfa2dfa(nfa);
 }
 
 export function setup2() {
@@ -145,7 +145,7 @@ export function setup5() {
   nfa.addEdge(KnownMappings.epsilon, qB, qEnd);
   
   nfa.accepting.add(qEnd);
-  return subsetConstruction(nfa);
+  return nfa2dfa(nfa);
 }
 
 export function setup6() {
@@ -154,7 +154,7 @@ export function setup6() {
   buildString(nfa, "here");
   console.log(nfa.stringifyMappings());
   
-  return subsetConstruction(nfa);
+  return nfa2dfa(nfa);
 }
 
 export function buildString(nfa, str) {
@@ -172,4 +172,6 @@ export function buildString(nfa, str) {
     nfa.addEdge(index, state, state2);
     state = state2;
   }
+
+  nfa.accepting.add(state);
 }

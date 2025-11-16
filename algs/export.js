@@ -4,5 +4,5 @@ export {
 } from "./minimizer.js";
 
 export {
-  subsetConstruction,
+  nfa2dfa,
 } from "./subset-construction.js";

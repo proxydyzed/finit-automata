@@ -8,7 +8,49 @@ import {
 
 export const EmptySet = Symbol("empty");
 
-export class Subset {
+export function nfa2dfa(nfa) {
+  if (!(nfa instanceof NondeterministicFiniteAutomata)) {
+    throw new TypeError(`Expected NondeterministicFiniteAutomata, but got ${typeof nfa === "object" ? (nfa.constructor?.name ?? "null") : typeof nfa}`);
+  }
+
+  const subset = new Subset(nfa);
+  const qq = epsilonClosure(nfa, [nfa.start]);
+  subset.pushEntry(qq);
+
+  for (const index of subset.worklist.iter()) {
+    const entry = subset.entries[index];
+    processEntry(subset, entry);
+  }
+
+  return subset.toDfa();
+}
+
+function processEntry(subset, entry) {
+  subset.table.rows++;
+  for (const [, index] of subset.alphabets) {
+    processAlpha(subset, entry, index);
+  }
+}
+
+function processAlpha(subset, entry, index) {
+  const images = deltas(subset.nfa, entry.states, index);
+  const reachableImages = epsilonClosure(subset.nfa, images);
+
+  if (reachableImages.size === 0) {
+    subset.table.push(-1);
+    return;
+  }
+
+  const alreadyProcessed = subset.entries.findIndex(entry => setsAreEqual(entry.states, reachableImages));
+  if (alreadyProcessed !== -1) {
+    subset.table.push(alreadyProcessed);
+    return;
+  }
+
+  subset.table.push(subset.pushEntry(reachableImages));
+}
+
+class Subset {
   nfa;
   table;
   entries;
@@ -32,124 +74,52 @@ export class Subset {
     this.worklist = new WorkList(Array.from({ length: 0 }, () => 0));
   }
   
-  /* *
+  /**
    * @param {Set<symbol>} states
-   * /
-  addEntry(states, elem) {
+   */
+  pushEntry(states) {
     const name = Symbol(`d${this.entries.length}`);
-    this.worklist.push(this.entries.length);
+    const entryIndex = this.entries.length;
     this.entries.push(new Entry(name, states));
-    return name;
+    this.worklist.add(entryIndex);
+    return entryIndex;
   }
-  */
-};
 
-export function nfa2dfa(nfa) {
-  if (!(nfa instanceof NondeterministicFiniteAutomata)) {
-    throw new TypeError(`Expected NondeterministicFiniteAutomata, but got ${typeof nfa === "object" ? (nfa.constructor?.name ?? "null") : typeof nfa}`);
-  }
-  
-  const subset = new Subset(nfa);
-  // for (const )
-  for (const index of subset.worklist.iter()) {
-    
-  }
-}
+  toDfa() {
+    const start = this.entries[0].name;
+    const dfa = new DeterministicFiniteAutomata(start);
+    for (const [alpha, index] of this.alphabets) {
+      dfa.alphabets.set(alpha, index);
+    }
 
-/**
- * @param {NondeterministicFiniteAutomata} nfa
- */
-export function subsetConstruction(nfa) {
-  const table = new FixedColumnTable(nfa.alphabets.size);
-  const alphabets = Array.from(nfa.alphabets);
+    for (const { name, states } of this.entries) {
+      if (name !== start) {
+        dfa.appendVertex(name);
+      }
 
-  const qq = epsilonClosure(nfa, [nfa.start]);
-  const entries = [new Entry(Symbol("d0"), new Set(qq))];
-  const worklist = [qq];
-  let worklistIndex = 0;
-
-  while (worklist.length > worklistIndex) {
-    const q = worklist.at(worklistIndex);
-    worklistIndex++;
-
-    let   col = 0;
-    const row = table.allocRow();
-    for (const [, index] of alphabets) {
-      const d = deltas(nfa, q, index);
-      const t = epsilonClosure(nfa, d);
-      const elem = table.get({ row: row, col: col });
-
-      if (t.size === 0) {
-        elem.deref = EmptySet;
-      } else {
-        const alreadyProcessed = entries.find(({ states }) => setsAreEqual(states, t));
-        if (typeof alreadyProcessed === "undefined") {
-          const dfaState = Symbol(`d${entries.length}`);
-          entries.push(new Entry(dfaState, t));
-          worklist.push(t);
-          elem.deref = dfaState;
-        } else {
-          elem.deref = alreadyProcessed.name;
+      inner: for (const state of states) {
+        if (this.nfa.accepting.has(state)) {
+          dfa.accepting.add(name);
+          break inner;
         }
       }
-
-      col++;
     }
-  }
 
-  return makeDfa(nfa, entries, table, alphabets);
-}
-
-/**
- * @param {NondeterministicFiniteAutomata} nfa
- * @param {Entry[]} entries
- * @param {FixedColumnTable} table
- * @param {[string, number][]} alphabets
- * 
- */
-function makeDfa(nfa, entries, table, alphabets) {
-  const reversed = new Map(Array.from(nfa.alphabets, ([v, k]) => [k, v]));
-  reversed.set(KnownMappings.epsilon, "∈");
-  reversed.set(KnownMappings.sigma, "∑");
-
-  const dfa = new DeterministicFiniteAutomata(entries[0].name);
-  for (const [alpha, index] of alphabets) {
-    dfa.alphabets.set(alpha, index);
-  }
-
-  for (const { name: state } of entries) {
-    dfa.appendVertex(state);
-  }
-
-  // console.log(entries.map(String).join("\n"));
-
-  for (const { name: q, states } of entries) {
-    inner: for (const state of states) {
-      if (nfa.accepting.has(state)) {
-        dfa.accepting.add(q);
-        break inner;
+    for (let row = 0; row < this.table.rows; row++) {
+      for (let col = 0; col < this.table.cols; col++) {
+        const entryIndex = this.table.get({ row, col }).deref;
+        if (entryIndex !== -1) {
+          const index  = this.alphabets.at(col)[1];
+          const state1 = this.entries.at(row).name;
+          const state2 = this.entries.at(entryIndex).name;
+          dfa.addEdge(index, state1, state2);
+        }
       }
     }
-  }
 
-  let rowCount = 0;
-  for (const row of table) {
-    let colCount = 0;
-    for (const { deref: state2 } of row) {
-      if (state2 !== EmptySet) {
-        const { name: state1 } = entries.at(rowCount);
-        const [alpha, index] = alphabets.at(colCount);
-        
-        // console.log(`${state1.description} + ${alpha} -> ${state2.description}`);
-        dfa.addEdge(index, state1, state2);
-      }
-      colCount++;
-    }
-    rowCount++;
+    return dfa;
   }
-
-  return dfa;
-}
+};
 
 class Entry {
   name;
@@ -259,12 +229,4 @@ export function setsAreEqual(set1, set2) {
   }
 
   return true;
-}
-
-/**
- * @param {Set<any>} set1
- * @param {Set<any>} set2
- */
-export function unionOfSets(set1, set2) {
-  return new Set([...set1, ...set2]);
 }
