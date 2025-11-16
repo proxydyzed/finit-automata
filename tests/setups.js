@@ -147,3 +147,31 @@ export function setup5() {
   nfa.accepting.add(qEnd);
   return subsetConstruction(nfa);
 }
+
+export function setup6() {
+  const nfa = new NondeterministicFiniteAutomata("start");
+  buildString(nfa, "there");
+  buildString(nfa, "here");
+  console.log(nfa.stringifyMappings());
+  
+  return subsetConstruction(nfa);
+}
+
+export const base = setup6;
+
+export function buildString(nfa, str) {
+  if (!(nfa instanceof NondeterministicFiniteAutomata)) {
+    throw new TypeError(`Expected NondeterministicFiniteAutomata, but got ${typeof nfa === "object" ? (nfa.constructor?.name ?? "null") : typeof nfa}`);
+  }
+  if (typeof str !== "string") {
+    throw new TypeError(`Expected string, but got ${typeof str === "object" ? (str.constructor?.name ?? "null") : typeof str}`);
+  }
+
+  let state = nfa.start;
+  for (const alpha of str) {
+    const index = nfa.addAlphabet(alpha);
+    const state2 = nfa.addVertex(`p${nfa.states.size}`);
+    nfa.addEdge(index, state, state2);
+    state = state2;
+  }
+}
