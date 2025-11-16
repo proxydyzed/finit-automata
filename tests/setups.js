@@ -1,6 +1,7 @@
 import {
   NondeterministicFiniteAutomata,
   DeterministicFiniteAutomata,
+  KnownMappings,
 } from "../dst/export.js";
 import {
   subsetConstruction,
@@ -130,4 +131,19 @@ export function setup4() {
 
   // console.log(dfa);
   return dfa;
+}
+
+export function setup5() {
+  const nfa = new NondeterministicFiniteAutomata("start");
+  const qA = nfa.addVertex("A");
+  const qB = nfa.addVertex("B");
+  const qEnd = nfa.addVertex("end");
+  
+  nfa.addEdge(KnownMappings.epsilon, nfa.start, qA);
+  nfa.addEdge(nfa.addAlphabet("0"), qA, qB);
+  nfa.addEdge(nfa.addAlphabet("1"), qB, qA);
+  nfa.addEdge(KnownMappings.epsilon, qB, qEnd);
+  
+  nfa.accepting.add(qEnd);
+  return subsetConstruction(nfa);
 }

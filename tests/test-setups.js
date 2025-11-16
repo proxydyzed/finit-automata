@@ -12,10 +12,10 @@ import {
 import * as setups from "./setups.js";
 
 try {
-  const dfa = setups.setup3();
+  const dfa = setups.setup5();
   const recognizer = new ExhaustiveRecognizer(dfa);
   const entries = [
-    { input: "fie", output: true },
+    { input: "01010", output: true },
   ];
   
   for (const { input, output } of entries) {
@@ -27,7 +27,8 @@ try {
 
   const context = minimizeDfa(dfa);
   // console.log(context);
-  // console.log(context.partitions.join("\n"));
+  console.log(context.partitions.join("\n"));
 } catch (error) {
-  console.error(error.stack);
+  console.log(error.message)
+  console.log(error.stack);
 }
