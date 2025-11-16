@@ -44,7 +44,7 @@ export function minimizeDfa(dfa) {
     console.log(context.partitions.join("\n"));
   }
 
-  return context.toDfa();
+  return context;
 }
 
 /**
@@ -207,7 +207,7 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
 }
 
 export class MinimizationContext {
-  #dfa;
+  dfa;
   names;
   worklist;
   reachable;
@@ -231,13 +231,15 @@ export class MinimizationContext {
     this.partitions = Array.from({ length: 0 }, () => new Partition(Symbol(""), new Set()));
   }
 
-  get dfa() {
-    return this.#dfa;
-  }
-
-  set dfa(dfa) {
-    this.#dfa = dfa;
-  }
+  // /**
+  //  * for better output in the console when logging
+  //  */
+  // get dfa() {
+  //   return this.#dfa;
+  // }
+  // set dfa(dfa) {
+  //   this.#dfa = dfa;
+  // }
 
   static from(dfa, partitions) {
     const ctx = new this(dfa);

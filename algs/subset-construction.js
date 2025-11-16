@@ -22,7 +22,7 @@ export function nfa2dfa(nfa) {
     processEntry(subset, entry);
   }
 
-  return subset.toDfa();
+  return subset;
 }
 
 function processEntry(subset, entry) {
@@ -78,8 +78,8 @@ class Subset {
    * @param {Set<symbol>} states
    */
   pushEntry(states) {
-    const name = Symbol(`d${this.entries.length}`);
     const entryIndex = this.entries.length;
+    const name = Symbol(`s{${entryIndex}}`);
     this.entries.push(new Entry(name, states));
     this.worklist.add(entryIndex);
     return entryIndex;

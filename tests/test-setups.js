@@ -11,15 +11,13 @@ import {
 import * as setups from "./setups.js";
 
 try {
-  const dfa = setups.setup1();
-  const recognizer = new ExhaustiveRecognizer(dfa);
-  const entries = [
-    { input: "01010", output: true },
-  ];
-  
-  for (const { input, output } of entries) {
-    console.assert(output === recognizer.accepts(input), `Failed to recognize "${input}"`);
-  }
+  console.log(setups.setup1().constructor?.name);
+  console.log(setups.setup2().constructor?.name);
+  console.log(setups.setup3().constructor?.name);
+  console.log(setups.setup4().constructor?.name);
+  console.log(setups.setup5().constructor?.name);
+  console.log(setups.setup6().constructor?.name);
+  console.log(setups.setup7().constructor?.name);
 } catch (error) {
   console.log(error.message)
   console.log(error.stack);

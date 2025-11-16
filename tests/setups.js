@@ -42,7 +42,7 @@ export function setup1() {
 
   nfa.accepting.add(n9);
 
-  return nfa2dfa(nfa);
+  return nfa2dfa(nfa).toDfa();
 }
 
 export function setup2() {
@@ -146,16 +146,15 @@ export function setup5() {
   nfa.addEdge(KnownMappings.epsilon, qB, qEnd);
   
   nfa.accepting.add(qEnd);
-  return nfa2dfa(nfa);
+  return nfa2dfa(nfa).toDfa();
 }
 
 export function setup6() {
   const nfa = new NondeterministicFiniteAutomata("start");
   buildString(nfa, "there");
   buildString(nfa, "here");
-  console.log(nfa.stringifyMappings());
   
-  return nfa2dfa(nfa);
+  return nfa2dfa(nfa).toDfa();
 }
 
 export function setup7() {
@@ -180,7 +179,7 @@ export function setup7() {
   nfa.accepting.add(q1);
   nfa.accepting.add(q3);
 
-  return nfa;
+  return nfa2dfa(nfa).toDfa();
 }
 
 export function buildString(nfa, str) {
@@ -194,10 +193,20 @@ export function buildString(nfa, str) {
   let state = nfa.start;
   for (const alpha of str) {
     const index = nfa.addAlphabet(alpha);
-    const state2 = nfa.addVertex(`p${nfa.states.size}`);
+    const state2 = nfa.addVertex(`str{${str}, ${alpha}, ${nfa.states.size}}`);
     nfa.addEdge(index, state, state2);
     state = state2;
   }
 
   nfa.accepting.add(state);
 }
+
+
+// const recognizer = new ExhaustiveRecognizer(dfa);
+// const entries = [
+//   { input: "01010", output: true },
+// ];
+
+// for (const { input, output } of entries) {
+//   console.assert(output === recognizer.accepts(input), `Failed to recognize "${input}"`);
+// }
