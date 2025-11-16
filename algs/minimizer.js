@@ -1,4 +1,7 @@
-import { ErrorState } from "../dst/export.js";
+import {
+  ErrorState,
+  WorkList,
+} from "../dst/export.js";
 
 const DEBUG = false;
 
@@ -274,29 +277,5 @@ class Partition {
   
   toString() {
     return `Partition{ name: ${this.name.description}, states: Set{${Array.from(this.states, state => state.description).join()}} }`;
-  }
-}
-
-class WorkList {
-  buffer;
-  index = 0;
-
-  constructor(buffer) {
-    this.buffer = buffer;
-  }
-
-  *[Symbol.iterator]() {
-    while (this.buffer.length > this.index) {
-      this.index++;
-      yield this.buffer.at(this.index - 1);
-    }
-  }
-
-  has(value) {
-    return this.buffer.includes(value, this.index);
-  }
-
-  add(value) {
-    this.buffer.push(value);
   }
 }

@@ -22,3 +22,7 @@ export {
 export {
   FixedColumnTable,
 } from "./tables.js";
+
+export {
+  WorkList,
+} from "./worklist.js";

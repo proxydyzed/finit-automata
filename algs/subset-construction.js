@@ -3,9 +3,30 @@ import {
   FixedColumnTable,
   NondeterministicFiniteAutomata,
   DeterministicFiniteAutomata,
+  WorkList,
 } from "../dst/export.js";
 
 export const EmptySet = Symbol("empty");
+
+export class Subset {
+  table;
+  entries;
+  worklist;
+  alphabets;
+
+  constructor(nfa) {
+    this.table = new FixedColumnTable(nfa.alphabets.size);
+    this.entries = Array.from({ length: 0 }, () => new Entry(
+      // corresponding dfa state
+      Symbol(""),
+      // set of nfa states returned by epsilon-closure computation
+      new Set(Array.from({ length: 0 }, () => Symbol("")))
+    ));
+
+    this.alphabets = Array.from(nfa.alphabets);
+    this.worklist = new WorkList([]);
+  }
+};
 
 /**
  * @param {NondeterministicFiniteAutomata} nfa
