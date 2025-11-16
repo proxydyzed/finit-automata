@@ -1,8 +1,6 @@
 import { ErrorState } from "../dst/export.js";
 
-function debugLog(...args) {
-  // console.log(...args);
-}
+const DEBUG = false;
 
 /**
  * @param {DeterministicFiniteAutomata} dfa
@@ -24,13 +22,17 @@ export function minimizeDfa(dfa) {
   if (nonAccepting.size > 0) {
     context.addPartition(nonAccepting);
   }
-
-  debugLog(context);
-  debugLog("-- begin --\n\n");
-
+  
+  if (DEBUG) {
+    console.log(context);
+    console.log("-- begin --\n\n");
+  }
+  
   for (const index of context.worklist) {
     processWorkset(context, context.partitions.at(index), index);
-    debugLog("\n");
+    if (DEBUG) {
+      console.log("\n");
+    }
   }
 
   return context;
@@ -43,7 +45,10 @@ export function minimizeDfa(dfa) {
  */
 function processWorkset(ctx, workset, partitionIndex) {
   const { dfa } = ctx;
-  debugLog(`${partitionIndex} => ${String(workset)}`);
+  
+  if (DEBUG) {
+    console.log(`${partitionIndex} => ${String(workset)}`);
+  }
 
   for (const [alpha, index] of dfa.alphabets) {
     const partitionIsSplit = processAlpha(ctx, workset, partitionIndex, alpha, index);
@@ -51,8 +56,10 @@ function processWorkset(ctx, workset, partitionIndex) {
     if (partitionIsSplit) {
       break;
     }
-
-    debugLog("");
+    
+    if (DEBUG) {
+      console.log("");
+    }
   }
 }
 
@@ -65,10 +72,18 @@ function processWorkset(ctx, workset, partitionIndex) {
  */
 function processAlpha(ctx, workset, partitionIndex, alpha, index) {
   const { dfa, partitions, names } = ctx;
-  const bucket = new Map();
-  const errorBucket = [];
-
-  debugLog(`Processing: "${alpha}"`);
+  const bucket = new Map(Array.from({ length: 0 }, () => [
+    // partition name
+    Symbol(""),
+    // array of dfa states
+    Array.from({ length: 0 }, () => Symbol("")),
+  ]));
+  // array of dead dfa states
+  const errorBucket = Array.from({ length: 0 }, () => Symbol(""));
+  
+  if (DEBUG) {
+    console.log(`Processing: "${alpha}"`);
+  }
 
   for (const state of workset.states) {
     const image = dfa.delta(state, index);
@@ -92,10 +107,14 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
         bucket.set(partition.name, [state]);
       }
 
-      debugLog(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | ${String(partition)}`);
+      if (DEBUG) {
+        console.log(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | ${String(partition)}`);
+      }
     } else {
       errorBucket.push(state);
-      debugLog(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | Dead state`);
+      if (DEBUG) {
+        console.log(`  ${state.description} + "${alpha}" => ${image.description.padEnd(5, " ")} | Dead state`);
+      }
     }
   }
 
@@ -103,11 +122,13 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
     bucket.set(ErrorState, errorBucket);
   }
 
-  debugLog("Reachable:");
-  debugLog(Array.from(ctx.reachable, ([k, v]) => `  ${k.description} => Set{${Array.from(v).join(", ")}}`).join("\n"));
-  debugLog("Bucket:");
-  debugLog(Array.from(bucket, ([k, v]) => `  ${k.description.padEnd(5, " ")} => [${Array.from(v, s => s.description).join(", ")}]`).join("\n"));
-
+  if (DEBUG) {
+    console.log("Reachable:");
+    console.log(Array.from(ctx.reachable, ([k, v]) => `  ${k.description} => Set{${Array.from(v).join(", ")}}`).join("\n"));
+    console.log("Bucket:");
+    console.log(Array.from(bucket, ([k, v]) => `  ${k.description.padEnd(5, " ")} => [${Array.from(v, s => s.description).join(", ")}]`).join("\n"));
+  }
+  
   if (bucket.size > 1) {
     const partition = partitions.at(partitionIndex);
 
@@ -115,36 +136,46 @@ function processAlpha(ctx, workset, partitionIndex, alpha, index) {
     for (const [, states] of bucket) {
       temp.push(new Set(states));
     }
-
-    debugLog("\nFound multiple partitions being reached, partition must be split");
-    debugLog("Partition to split:");
-    debugLog(" ", String(partition));
-
+  
+    if (DEBUG) {
+      console.log("\nFound multiple partitions being reached, partition must be split");
+      console.log("Partition to split:");
+      console.log(" ", String(partition));
+    }
+    
     partition.states = temp.pop();
     for (const state of partition.states) {
       names.set(state, partitionIndex);
     }
 
-    debugLog("Partition is split:");
-    debugLog(" ", String(partition));
-
+    if (DEBUG) {
+      console.log("Partition is split:");
+      console.log(" ", String(partition));
+    }
+    
     for (const states of temp) {
       ctx.addPartition(states);
     }
 
-    debugLog(`NEW partitions\n  ${ctx.partitions.join("\n  ")}`);
+    if (DEBUG) {
+      console.log(`NEW partitions\n  ${ctx.partitions.join("\n  ")}`);
+    }
 
     // we push all partition "A" reachable from
     // partition "B" to the worklist and clear
     // the reachable set
     ctx.pushReachables(partition.name);
 
-    debugLog("Pushed reachable indices, returning true");
+    if (DEBUG) {
+      console.log("Pushed reachable indices, returning true");
+    }
 
     return true;
   }
 
-  debugLog("Nothing was split, returning false");
+  if (DEBUG) {
+    console.log("Nothing was split, returning false");
+  }
 
   return false;
 }

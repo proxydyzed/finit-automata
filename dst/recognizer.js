@@ -1,5 +1,7 @@
 import { ErrorState } from "./fa.js";
 
+const DEBUG = false;
+
 // simple recognizer.
 // exhausts the input string completely.
 // does not match part of the string,
@@ -28,10 +30,16 @@ export class ExhaustiveRecognizer {
   recognize(str) {
     let state = this.fa.start;
     for (const alpha of str) {
-      state = this.fa.delta(state, alpha);
-      if (state === ErrorState) {
+      const state2 = this.fa.delta(state, alpha);
+      if (DEBUG) {
+        console.log(`"${state.description}" + "${alpha}" => "${state2.description}"`);
+      }
+
+      if (state2 === ErrorState) {
         return ErrorState;
       }
+      
+      state = state2;
     }
 
     return state;
