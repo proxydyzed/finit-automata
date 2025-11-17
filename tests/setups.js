@@ -199,6 +199,7 @@ export function buildString(nfa, str) {
   }
 
   nfa.accepting.add(state);
+  return state;
 }
 
 

@@ -13,56 +13,103 @@ import {
   buildString,
 } from "../tests/setups.js";
 
-function convertToScanner(nfa) {
+function convertToScanner({ nfa, tokens }) {
   const subset = nfa2dfa(nfa);
   const dfa1 = subset.toDfa();
-  const context = minimizeDfa(dfa1);
-  const dfa2 = context.toDfa();
 
-  const nameMapping = new Map(Array.from({ length: 0 }, () => [
-    // nfa accepting state
-    Symbol(""),
-    // dfa state (minimized and accepting)
-    Symbol(""),
-  ]));
-
+  const entryNameMap = new Map();
   for (const entry of subset.entries) {
-    for (const state of entry.states) {
+    // multiple states are ignored
+    inner: for (const state of entry.states) {
       if (nfa.accepting.has(state)) {
-        nameMapping.set(state, context.partitions.at(context.names.get(entry.name)).name);
+        entryNameMap.set(entry.name, tokens.get(state));
+        break inner;
       }
     }
   }
 
-  const nameBucket = new Map();
-  for (const [state, partitionName] of nameMapping) {
-    if (nameBucket.has(partitionName)) {
-      nameBucket.get(partitionName).push(state);
-    } else {
-      nameBucket.set(partitionName, [state]);
-    }
+  const ctx = new ScannerCrafter(dfa1, entryNameMap);
+  recurse(ctx, dfa1.start);
+  console.log(ctx.buffer);
+}
+
+class ScannerCrafter {
+  dfa;
+  tokens;
+  seen;
+  reversedAlphabets;
+
+  buffer = "";
+  indent = 0;
+
+  constructor(dfa, tokens) {
+    this.dfa = dfa;
+    this.tokens = tokens;
+    this.seen = new Set();
+    this.reversedAlphabets = new Map(Array.from(dfa.alphabets, ([k, v]) => [v, k]));
   }
 
-  // console.log(nameMapping);
-  // console.log(nameBucket);
-
-  let str = "";
-  const reversedAlphabets = new Map(Array.from(dfa2.alphabets, ([k, v]) => [v, k]));
-  for (const state of dfa2.states) {
-    if (state === ErrorState) {
-      continue;
-    }
-
-    str += `state ${state.description}:\n`;
-    const mapping = dfa2.mappings.get(state);
-    const clusters = clusterChars(Array.from(mapping, ([k]) => reversedAlphabets.get(k)));
-    const codePointBuckets = bucketCluster(clusters);
-    console.log({ clusters: Array.from(clusters.keys(), c => String.fromCodePoint(c)) });
-    console.log({ bucket: codePointBuckets.map(codePointBucket => codePointBucket.map(c => String.fromCodePoint(c))) })
-
+  writeAll(str) {
+    this.buffer += str;
   }
 
-  console.log(str);
+  writeLine(str) {
+    this.buffer += "  ".repeat(this.indent) + str + "\n";
+  }
+}
+
+function recurse(ctx, subsetStateA) {
+  if (ctx.seen.has(subsetStateA)) {
+    return;
+  }
+
+  ctx.seen.add(subsetStateA);
+
+  const { dfa, tokens, reversedAlphabets } = ctx;
+  const mapping = dfa.mappings.get(subsetStateA);
+
+  if (mapping.size === 0) {
+    return;
+  } else if (mapping.size === 1) {
+    const [[alphaIndex, subsetStateB]] = mapping;
+    const alpha = reversedAlphabets.get(alphaIndex);
+
+    ctx.writeLine(`if (source[index] == '${alpha}') {`);
+    ctx.indent++;
+    ctx.writeLine("index++;");
+
+    if (dfa.accepting.has(subsetStateB)) {
+      ctx.writeLine(`tag = Token.Tag.${tokens.get(subsetStateB)};`);
+    }
+
+    ctx.indent--;
+    ctx.writeLine("}");
+    return;
+  }
+
+  ctx.writeLine(`switch (source[index]) {`);
+  ctx.indent++;
+  for (const [alphaIndex, subsetStateB] of mapping) {
+    const alpha = reversedAlphabets.get(alphaIndex);
+
+    ctx.writeLine(`case '${alpha}': {`);
+    ctx.indent++;
+    ctx.writeLine(`index++;`);
+
+    if (dfa.accepting.has(subsetStateB)) {
+      ctx.writeLine(`tag = Token.Tag.${tokens.get(subsetStateB)};`);
+      // ctx.writeLine(`tag = Token.get(${JSON.stringify(tokens.get(subsetStateB))});`);
+    }
+
+    recurse(ctx, subsetStateB);
+
+    ctx.writeLine("break;");
+    ctx.indent--;
+    ctx.writeLine("}");
+  }
+
+  ctx.indent--;
+  ctx.writeLine("}");
 }
 
 try {
@@ -82,42 +129,48 @@ ${fa.stringifyMappings().trimEnd()}`;
 
 function rl() {
   const nfa = new NondeterministicFiniteAutomata("n0");
+  const tokens = new Map();
 
-  buildString(nfa, "(");
-  buildString(nfa, ")");
-  buildString(nfa, "{");
-  buildString(nfa, "}");
-  buildString(nfa, "[");
-  buildString(nfa, "]");
+  tokens.set(buildString(nfa, "("),   "lParen");
+  tokens.set(buildString(nfa, ")"),   "rParen");
+  tokens.set(buildString(nfa, "{"),   "lBrace");
+  tokens.set(buildString(nfa, "}"),   "rBrace");
+  tokens.set(buildString(nfa, "["),   "lBracket");
+  tokens.set(buildString(nfa, "]"),   "rBracket");
 
-  buildString(nfa, ":");
-  buildString(nfa, ";");
+  tokens.set(buildString(nfa, ":"),   "colon");
+  tokens.set(buildString(nfa, ";"),   "semicolon");
 
-  buildString(nfa, "?");
+  tokens.set(buildString(nfa, "new"), "keywordNew");
+  tokens.set(buildString(nfa, "now"), "keywordNow");
 
-  buildString(nfa, "!");
-  buildString(nfa, "+");
-  buildString(nfa, "-");
-  buildString(nfa, "*");
-  buildString(nfa, "/");
-  buildString(nfa, ",");
-  buildString(nfa, ".");
+  tokens.set(buildString(nfa, "?"),   "question");
 
-  buildString(nfa, "=");
+  tokens.set(buildString(nfa, "!"),   "bang");
+  tokens.set(buildString(nfa, "+"),   "plus");
+  tokens.set(buildString(nfa, "-"),   "minus");
+  tokens.set(buildString(nfa, "*"),   "asterisk");
+  tokens.set(buildString(nfa, "/"),   "slash");
+  tokens.set(buildString(nfa, ","),   "comma");
+  tokens.set(buildString(nfa, "."),   "period");
 
-  buildString(nfa, "==");
-  buildString(nfa, "!=");
-  buildString(nfa, "+=");
-  buildString(nfa, "-=");
-  buildString(nfa, "*=");
-  buildString(nfa, "/=");
+  tokens.set(buildString(nfa, "="),   "equal");
 
-  buildString(nfa, "<");
-  buildString(nfa, ">");
-  buildString(nfa, "<=");
-  buildString(nfa, ">=");
+  tokens.set(buildString(nfa, "=="),  "equalEqual");
+  tokens.set(buildString(nfa, "!="),  "bangEqual");
+  tokens.set(buildString(nfa, "+="),  "plusEqual");
+  tokens.set(buildString(nfa, "-="),  "minusEqual");
+  tokens.set(buildString(nfa, "*="),  "asteriskEqual");
+  tokens.set(buildString(nfa, "/="),  "slashEqual");
 
-  buildString(nfa, "=>");
+  tokens.set(buildString(nfa, "<"),   "lAngle");
+  tokens.set(buildString(nfa, ">"),   "rAngle");
+  tokens.set(buildString(nfa, "<="),  "lAngleEqual");
+  tokens.set(buildString(nfa, ">="),  "rAngleEqual");
+
+  tokens.set(buildString(nfa, "=>"),  "equalRAngle");
+
+  return { nfa, tokens };
 
   {
     const alphabetVertex = nfa.addVertex("alphabets");
@@ -151,7 +204,7 @@ function rl() {
     nfa.accepting.add(numberVertex);
   }
 
-  return nfa;
+  return { nfa, tokens };
 }
 
 /**
