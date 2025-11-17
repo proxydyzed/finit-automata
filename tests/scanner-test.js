@@ -5,6 +5,7 @@ import {
 import {
   DeterministicFiniteAutomata,
   NondeterministicFiniteAutomata,
+  ErrorState,
   KnownMappings,
   ExhaustiveRecognizer,
 } from "../dst/export.js";
@@ -12,63 +13,74 @@ import {
   buildString,
 } from "../tests/setups.js";
 
-function clusterChars(iter) {
-  const bucket = new Map(Array.from({ length: 0 }, () => [
-    // character code point
-    0,
-    // clusters array index
-    0,
+function convertToScanner(nfa) {
+  const subset = nfa2dfa(nfa);
+  const dfa1 = subset.toDfa();
+  const context = minimizeDfa(dfa1);
+  const dfa2 = context.toDfa();
+
+  const nameMapping = new Map(Array.from({ length: 0 }, () => [
+    // nfa accepting state
+    Symbol(""),
+    // dfa state (minimized and accepting)
+    Symbol(""),
   ]));
 
-  const clusters = Array.from({ length: 0 }, () => ({ deref: Symbol("") }));
-
-  for (const alpha of iter) {
-    const codePoint = alpha.codePointAt(0);
-    const c1 = codePoint - 1;
-    const c2 = codePoint + 1;
-
-    if (bucket.has(c1)) {
-      const merge1 = bucket.get(c1);
-      if (bucket.has(c2)) {
-        const merge2 = bucket.get(c2);
-        clusters.at(merge1).deref = clusters.at(merge2).deref;
+  for (const entry of subset.entries) {
+    for (const state of entry.states) {
+      if (nfa.accepting.has(state)) {
+        nameMapping.set(state, context.partitions.at(context.names.get(entry.name)).name);
       }
-
-      bucket.set(codePoint, merge1);
-    } else if (bucket.has(c2)) {
-      const merge2 = bucket.get(c2);
-      bucket.set(codePoint, merge2);
-    } else {
-      const cluster = { deref: Symbol(`s${clusters.length}`), alpha, codePoint };
-      bucket.set(codePoint, clusters.length);
-      clusters.push(cluster)
     }
   }
 
-  return { clusters, bucket };
-}
-
-function convertToScanner(dfa, names) {
-  // console.log("DFA:", { start: dfa.start, states: dfa.states, accepting: dfa.accepting });
-  // console.log("Alphabets:", dfa.alphabets);
-  console.log(names);
-  const { clusters, bucket } = clusterChars(dfa.alphabets.keys());
-  console.log(clusters);
-  const reverseBucket = new Map();
-  for (const [codePoint, clusterIndex] of bucket) {
-    const cluster = clusters.at(clusterIndex)
-    if (reverseBucket.has(cluster.deref)) {
-      reverseBucket.get(cluster.deref).push(codePoint);
+  const nameBucket = new Map();
+  for (const [state, partitionName] of nameMapping) {
+    if (nameBucket.has(partitionName)) {
+      nameBucket.get(partitionName).push(state);
     } else {
-      reverseBucket.set(cluster.deref, [codePoint]);
+      nameBucket.set(partitionName, [state]);
     }
   }
 
-  // console.log(bucket);
-  console.log(Array.from(reverseBucket, ([sym, codes]) => `${sym.description.padEnd(3, " ")} => [ ${codes.sort((a, b) => a > b ? 1 : -1).map(code => `'${String.fromCharCode(code)}'`).join(", ")} ]`).join("\n"));
+  // console.log(nameMapping);
+  // console.log(nameBucket);
+
+  let str = "";
+  const reversedAlphabets = new Map(Array.from(dfa2.alphabets, ([k, v]) => [v, k]));
+  for (const state of dfa2.states) {
+    if (state === ErrorState) {
+      continue;
+    }
+
+    str += `state ${state.description}:\n`;
+    const mapping = dfa2.mappings.get(state);
+    const clusters = clusterChars(Array.from(mapping, ([k]) => reversedAlphabets.get(k)));
+    const codePointBuckets = bucketCluster(clusters);
+    console.log({ clusters: Array.from(clusters.keys(), c => String.fromCodePoint(c)) });
+    console.log({ bucket: codePointBuckets.map(codePointBucket => codePointBucket.map(c => String.fromCodePoint(c))) })
+
+  }
+
+  console.log(str);
 }
 
 try {
+  convertToScanner(rl());
+} catch (error) {
+  console.error(error);
+}
+
+function stringifyFA(fa) {
+  return `\
+Intermediate: DeterministicFiniteAutomata${String(fa.start)}
+states: Set(${fa.states.size}){ ${Array.from(fa.states, state => state.description).join(", ")} }
+accepting: Set(${fa.accepting.size}){ ${Array.from(fa.accepting, state => state.description)} }
+mappings
+${fa.stringifyMappings().trimEnd()}`;
+}
+
+function rl() {
   const nfa = new NondeterministicFiniteAutomata("n0");
 
   buildString(nfa, "(");
@@ -105,6 +117,8 @@ try {
   buildString(nfa, "<=");
   buildString(nfa, ">=");
 
+  buildString(nfa, "=>");
+
   {
     const alphabetVertex = nfa.addVertex("alphabets");
 
@@ -137,77 +151,67 @@ try {
     nfa.accepting.add(numberVertex);
   }
 
-  const subset = nfa2dfa(nfa);
-  const subsetNameMapping = new Map(Array.from({ length: 0 }, () => [
-    // dfa state (in subset)
-    Symbol(""),
-    // nfa state
-    Symbol(""),
+  return nfa;
+}
+
+/**
+ * @param {string[]} iter 
+ */
+function clusterChars(iter, fixOrder = false) {
+  const mapping = new Map(Array.from({ length: 0 }, () => [
+    // character code point
+    0,
+    // clusters array index
+    0,
   ]));
 
-  for (const entry of subset.entries) {
-    for (const state of entry.states) {
-      subsetNameMapping.set(entry.name, state);
+  const entries = Array.from({ length: 0 }, () => 0);
+  let uniqueIndex = 0;
+
+  for (const alpha of iter) {
+    const codePoint = alpha.codePointAt(0);
+    const c1 = codePoint - 1;
+    const c2 = codePoint + 1;
+
+    if (mapping.has(c1)) {
+      const merge1 = mapping.get(c1);
+      if (mapping.has(c2)) {
+        const merge2 = mapping.get(c2);
+        entries[merge1] = entries[merge2];
+      }
+
+      mapping.set(codePoint, merge1);
+    } else if (mapping.has(c2)) {
+      const merge2 = mapping.get(c2);
+      mapping.set(codePoint, merge2);
+    } else {
+      // const cluster = { deref: Symbol(`s${entries.length}`), alpha, codePoint };
+      const entry = uniqueIndex;
+      uniqueIndex++;
+
+      mapping.set(codePoint, entries.length);
+      entries.push(entry);
     }
   }
 
-  const context = minimizeDfa(subset.toDfa());
-  const minimizedNameMapping = new Map(Array.from({ length: 0 }, () => [
-    // nfa state
-    Symbol(""),
-    // dfa state (minimized)
-    Symbol(""),
-  ]));
-
-  for (const [state, partitionIndex] of context.names) {
-    const partition = context.partitions.at(partitionIndex);
-    minimizedNameMapping.set(subsetNameMapping.get(state), partition.name);
+  if (fixOrder) {
+    const seen = new Set();
+    return new Map(Array.from(mapping, ([k, v]) => [k, seen.add(entries[v]).size - 1]));
   }
 
-  // console.log(subsetNameMapping);
-  // console.log(minimizedNameMapping);
-
-  convertToScanner(context.toDfa(), minimizedNameMapping);
-
-  // console.log(context.toDfa());
-
-  // const dfa2 = minimizeDfa(dfa);
-
-  // // console.log("Begin:", stringifyFA(nfa));
-  // // console.log("End;\n");
-  // // console.log("Begin:", stringifyFA(dfa));
-  // // console.log("End;");
-  // console.log("Begin:", stringifyFA(dfa2));
-  // console.log("End;");
-
-  // // console.log(dfa2);
-
-  // const tests = [
-  //   { input: "=", output: true },
-  //   { input: "==", output: true },
-  //   { input: "===", output: false },
-  //   { input: "=+", output: false },
-  //   { input: "+=", output: true },
-  //   { input: "newhile", output: true },
-  //   { input: "new", output: true },
-  //   { input: "wen", output: true },
-  // ];
-
-  // const recognizer = new ExhaustiveRecognizer(dfa2);
-
-  // for (const { input, output } of tests) {
-  //   console.assert(output === recognizer.accepts(input), `Failed on "${input}"`);
-  // }
-  // console.log("Done");
-} catch (error) {
-  console.error(error);
+  return new Map(Array.from(mapping, ([k, v]) => [k, entries[v]]));
 }
 
-function stringifyFA(fa) {
-  return `\
-Intermediate: DeterministicFiniteAutomata${String(fa.start)}
-states: Set(${fa.states.size}){ ${Array.from(fa.states, state => state.description).join(", ")} }
-accepting: Set(${fa.accepting.size}){ ${Array.from(fa.accepting, state => state.description)} }
-mappings
-${fa.stringifyMappings().trimEnd()}`;
+function bucketCluster(mapping) {
+  const bucket = new Map();
+  for (const [k, v] of mapping) {
+    const entry = v;
+    if (bucket.has(entry)) {
+      bucket.get(entry).push(k);
+    } else {
+      bucket.set(entry, [k]);
+    }
+  }
+
+  return Array.from(bucket.values());
 }
