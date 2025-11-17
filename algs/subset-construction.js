@@ -107,7 +107,7 @@ class Subset {
 
     for (let row = 0; row < this.table.rows; row++) {
       for (let col = 0; col < this.table.cols; col++) {
-        const entryIndex = this.table.get({ row, col }).deref;
+        const entryIndex = this.table.get({ row, col });
         if (entryIndex !== -1) {
           const index  = this.alphabets.at(col)[1];
           const state1 = this.entries.at(row).name;

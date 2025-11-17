@@ -13,7 +13,7 @@ export class FixedColumnTable {
   constructor(columns, init) {
     this.cols = columns;
     this.rows = 0;
-    this.buffer = Array.from({ length: 0 }, () => new TableElementPointer(init()));
+    this.buffer = Array.from({ length: 0 }, () => init());
   }
 
   get(pos) {
@@ -26,18 +26,9 @@ export class FixedColumnTable {
     
     return null;
   }
-  
-  allocRow() {
-    for (let i = 0; i < this.cols; i++) {
-      this.buffer.push(new TableElementPointer(undefined));
-    }
-    
-    this.rows++;
-    return this.rows - 1;
-  }
 
   push(elem) {
-    this.buffer.push(new TableElementPointer(elem));
+    this.buffer.push(elem);
   }
 
   *[Symbol.iterator]() {
@@ -56,7 +47,7 @@ function* takeBuffer(buffer, offset, amount) {
 /**
  * @template Elem
  */
-export class TableElementPointer {
+export class ValuePointer {
   deref;
   
   /**
