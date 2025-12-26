@@ -1,0 +1,283 @@
+/*
+@state(3, reachable) {
+  @edge(fail) {
+    @increment();
+    @tag(invalid);
+    @break(3);
+  }
+  @edge(eof) {
+    @tag(eof);
+    @break(3);
+  }
+  @edge(' ', '\n', '\r', '\t') {
+    @increment();
+    @continue(3);
+  }
+  @edge('+') {
+    @increment();
+    @tag(plus);
+    @state(4) {
+      @edge(fail): @break(4);
+      @edge(eof) @break(4);
+      @edge('=') {
+        @increment();
+        @tag(plusEqual);
+        @break(4);
+      }
+    }
+    @break(3);
+  }
+  @edge('-') {
+    @increment();
+    @tag(minus);
+    @state(8) {
+      @edge(fail): @break(8);
+      @edge(eof) @break(8);
+      @edge('=') {
+        @increment();
+        @tag(minusEqual);
+        @break(8);
+      }
+    }
+    @break(3);
+  }
+  @edge('*') {
+    @increment();
+    @tag(asterisk);
+    @state(12) {
+      @edge(fail): @break(12);
+      @edge(eof) @break(12);
+      @edge('=') {
+        @increment();
+        @tag(asteriskEqual);
+        @break(12);
+      }
+    }
+    @break(3);
+  }
+  @edge('/') {
+    @increment();
+    @tag(slash);
+    @state(16) {
+      @edge(fail): @break(16);
+      @edge(eof) @break(16);
+      @edge('/') {
+        @increment();
+        @state(17, reachable) {
+          @edge(fail) {
+            @increment();
+            @continue(17);
+          }
+          @edge(eof) {
+            @tag(eof);
+            @break(17);
+          }
+          @edge('\n') {
+            @increment();
+            @continue(3);
+          }
+        }
+        @break(16);
+      }
+      @edge('=') {
+        @increment();
+        @tag(slashEqual);
+        @break(16);
+      }
+    }
+    @break(3);
+  }
+  @edge('(') {
+    @increment();
+    @tag(lParen);
+    @break(3);
+  }
+  @edge(')') {
+    @increment();
+    @tag(rParen);
+    @break(3);
+  }
+  @edge('{') {
+    @increment();
+    @tag(lBrace);
+    @break(3);
+  }
+  @edge('}') {
+    @increment();
+    @tag(rBrace);
+    @break(3);
+  }
+  @edge('[') {
+    @increment();
+    @tag(lBracket);
+    @break(3);
+  }
+  @edge(']') {
+    @increment();
+    @tag(rBracket);
+    @break(3);
+  }
+  @edge(':') {
+    @increment();
+    @tag(colon);
+    @break(3);
+  }
+  @edge(';') {
+    @increment();
+    @tag(semicolon);
+    @break(3);
+  }
+  @edge('?') {
+    @increment();
+    @tag(question);
+    @break(3);
+  }
+  @edge('!') {
+    @increment();
+    @tag(bang);
+    @state(35) {
+      @edge(fail): @break(35);
+      @edge(eof) @break(35);
+      @edge('=') {
+        @increment();
+        @tag(bangEqual);
+        @break(35);
+      }
+    }
+    @break(3);
+  }
+  @edge(',') {
+    @increment();
+    @tag(comma);
+    @break(3);
+  }
+  @edge('.') {
+    @increment();
+    @tag(period);
+    @state(40) {
+      @edge(fail): @break(40);
+      @edge(eof) @break(40);
+      @edge('.') {
+        @increment();
+        @state(41) {
+          @edge(fail): @break(41);
+          @edge(eof) @break(41);
+          @edge('.') {
+            @increment();
+            @tag(period3);
+            @break(41);
+          }
+        }
+        @break(40);
+      }
+    }
+    @break(3);
+  }
+  @edge('=') {
+    @increment();
+    @tag(equal);
+    @state(47) {
+      @edge(fail): @break(47);
+      @edge(eof) @break(47);
+      @edge('=') {
+        @increment();
+        @tag(equalEqual);
+        @break(47);
+      }
+      @edge('>') {
+        @increment();
+        @tag(equalRAngle);
+        @break(47);
+      }
+    }
+    @break(3);
+  }
+  @edge('<') {
+    @increment();
+    @tag(lAngle);
+    @state(53) {
+      @edge(fail): @break(53);
+      @edge(eof) @break(53);
+      @edge('=') {
+        @increment();
+        @tag(lAngleEqual);
+        @break(53);
+      }
+    }
+    @break(3);
+  }
+  @edge('>') {
+    @increment();
+    @tag(rAngle);
+    @state(57) {
+      @edge(fail): @break(57);
+      @edge(eof) @break(57);
+      @edge('=') {
+        @increment();
+        @tag(rAngleEqual);
+        @break(57);
+      }
+    }
+    @break(3);
+  }
+  @edge('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') {
+    @increment();
+    @tag(number);
+    @state(61, reachable) {
+      @edge(fail): @break(61);
+      @edge(eof) @break(61);
+      @edge('0', '1', '2', '3', '4', '5', '6', '7', '8', '9') {
+        @increment();
+        @continue(61);
+      }
+    }
+    @break(3);
+  }
+  @edge('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '_', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z') {
+    @increment();
+    @tag(identifier);
+    @state(64, reachable) {
+      @edge(fail): @break(64);
+      @edge(eof) @break(64);
+      @edge('0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '_', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z') {
+        @increment();
+        @continue(64);
+      }
+    }
+    @break(3);
+  }
+  @edge('\"') {
+    @increment();
+    @tag(incomplete_string);
+    @state(67, reachable) {
+      @edge(fail) {
+        @increment();
+        @continue(67);
+      }
+      @edge(eof) @break(67);
+      @edge('\"') {
+        @increment();
+        @tag(string);
+        @break(67);
+      }
+      @edge('\\') {
+        @increment();
+        @state(69) {
+          @edge(fail) {
+            @increment();
+            @tag(invalid_string_escape);
+            @break(69);
+          }
+          @edge(eof) @break(69);
+          @edge('b', 'f', 'n', 'r', 't', '\\') {
+            @increment();
+            @continue(67);
+          }
+        }
+        @break(67);
+      }
+    }
+    @break(3);
+  }
+}
+*/
