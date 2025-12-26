@@ -204,11 +204,6 @@ export class CompilationContext {
     return JSON.stringify(this.subset.alphabets.at(alphaOffset));
   }
 
-  unpackArray(extraIndex) {
-    const length = this.subset.extra.at(extraIndex);
-    return this.subset.extra.slice(extraIndex + 1, extraIndex + 1 + length);
-  }
-
   addInst(inst) {
     this.instructions.append(inst);
     return this.instructions.getSize() - 1 + InstructionRefOffset;
@@ -341,4 +336,9 @@ export class SCDIR {
     this.instructions = instructions;
     this.extra = extra;
   }
-}
+
+  unpackArray(extraIndex) {
+    const length = this.extra.at(extraIndex);
+    return this.extra.slice(extraIndex + 1, extraIndex + 1 + length);
+  }
+};

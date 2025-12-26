@@ -37,7 +37,6 @@ export class SubsetGen {
 };
 
 export class Subset {
-  // nfa;
   tokens;
   alphabets;
   entries;
@@ -57,7 +56,7 @@ export class Subset {
     this.extra = extra;
   }
 
-  getArray(extraIndex) {
+  unpackArray(extraIndex) {
     const lens = this.extra.at(extraIndex);
     return this.extra.slice(extraIndex + 1, extraIndex + 1 + lens);
   }
@@ -142,7 +141,7 @@ export class SubsetEntry {
     }
     return new this(__inst__.states, __inst__.found, __inst__.node);
   }
-}
+};
 
 export class SubsetNode {
   tag;
@@ -199,4 +198,4 @@ export class SubsetNode {
     }
     return new this(__inst__.tag, SubsetNode.Data.from(__inst__.data));
   }
-}
+};

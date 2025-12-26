@@ -73,7 +73,7 @@ function enterNode(ctx, parentScope, nodeIndex) {
   const tokenIndex = ctx.subset.entries.at(entryIndex).found;
 
   const hasToken = tokenIndex !== -1;
-  const edgeNodes = ctx.unpackArray(extraIndex);
+  const edgeNodes = ctx.subset.unpackArray(extraIndex);
 
   if (hasToken && !ctx.subset.tokens.has(tokenIndex)) {
     throw new Error(`Token index (${tokenIndex}) does not have a matching token name\n${traceScope(ctx, parentScope, nodeIndex)}`);

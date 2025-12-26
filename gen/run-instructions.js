@@ -44,11 +44,6 @@ class Context {
     return this.labelMap.get(index) ?? "?";
   }
 
-  unpackArray(extraIndex) {
-    const length = this.ir.extra.at(extraIndex);
-    return this.ir.extra.slice(extraIndex + 1, extraIndex + 1 + length);
-  }
-
   getAlphaChar(alphaOffset) {
     return `'${JSON.stringify(this.subset.alphabets.at(alphaOffset)).slice(1, -1)}'`;
   }
@@ -196,7 +191,7 @@ function run(ctx, instIndex, prevLabel) {
 
         // writer.writeLine("@match {");
         // writer.indent++;
-        for (const edgeIndex of ctx.unpackArray(stateData.edges)) {
+        for (const edgeIndex of ctx.ir.unpackArray(stateData.edges)) {
           run(ctx, edgeIndex, instIndex);
         }
         // writer.indent--;
@@ -220,7 +215,7 @@ function run(ctx, instIndex, prevLabel) {
     {
       const edgeData = ctx.unpackEdgeData(inst);
 
-      writer.writeLine(`@edge(${Array.from(ctx.unpackArray(edgeData.alphabets), alphaIndex => {
+      writer.writeLine(`@edge(${Array.from(ctx.ir.unpackArray(edgeData.alphabets), alphaIndex => {
         if (alphaIndex >= AlphabetOffset) {
           return "'" + JSON.stringify(ctx.subset.alphabets.at(alphaIndex - AlphabetOffset)).slice(1, -1) + "'";
         } else if (alphaIndex === AlphabetReference.fail) {
