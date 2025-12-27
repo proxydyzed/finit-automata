@@ -67,6 +67,8 @@ export function generate(subset) {
 function enterNode(ctx, parentScope, nodeIndex) {
   const node = ctx.getNode(nodeIndex);
   assert(node.tag === SubsetNode.Tag.state, `Expected state node, got ${node.tag}`);
+  assert(parentScope.tag === DfaScope.Tag.top ||
+    parentScope.tag === DfaScope.Tag.edge, "Expected top | edge scopes");
 
   const entryIndex = node.data.data1;
   const extraIndex = node.data.data2;
@@ -152,7 +154,7 @@ function enterNode(ctx, parentScope, nodeIndex) {
 }
 
 function enterEdges(ctx, parentScope, parentNodeIndex, edges) {
-  // assert(false, "Broken");
+  assert(parentScope.tag === DfaScope.Tag.state, "Expected state scope");
 
   let hasFail = false;
   let hasEof = false;
@@ -224,8 +226,8 @@ function enterEdges(ctx, parentScope, parentNodeIndex, edges) {
         }
 
         case AlphabetReference.eof: {
-          if (entry.recursive) {
-            throw new Error(`Can not have recursive "eof" edge\n${traceScope(ctx, scope, nextNodeIndex)}`);
+          if (entry.recursive && findEofChain(ctx, parentScope, reachableScope)) {
+            throw new Error(`Can not have recursive "eof" chain\n${traceScope(ctx, scope, nextNodeIndex)}`);
           }
 
           break block;
@@ -263,7 +265,7 @@ function enterEdges(ctx, parentScope, parentNodeIndex, edges) {
 
           case AlphabetReference.eof: {
             ctx.scratch.append(ctx.addInst({
-              tag: Instruction.Tag.edgeEof,
+              tag: recursive ? Instruction.Tag.edgeEofCircular : Instruction.Tag.edgeEof,
               data: {
                 data1: instIndex,
                 data2: -1,
@@ -280,13 +282,7 @@ function enterEdges(ctx, parentScope, parentNodeIndex, edges) {
     }
 
     if (!hasEof) {
-      ctx.scratch.append(ctx.addInst({
-        tag: Instruction.Tag.edgeEof,
-        data: {
-          data1: -1,
-          data2: -1,
-        },
-      }));
+      ctx.scratch.append(Instruction.Ref.edgeEofImplicit);
     }
 
     for (const { nextNodeIndex, alphaIndexArray, instIndex, recursive } of entries) {
@@ -341,10 +337,6 @@ function makeBuckets(ctx, nodeMembers) {
     const entryIndex = node.data.data1;
     const alphaIndex = node.data.data2;
 
-    // if (AlphabetOffset >= alphaIndex) {
-    //   continue;
-    // }
-
     const nextNodeIndex = ctx.subset.entries.at(entryIndex).node;
     if (bucket.has(nextNodeIndex)) {
       bucket.get(nextNodeIndex).push(alphaIndex);
@@ -384,74 +376,7 @@ function findReachableStateScope(ctx, scope, nodeIndex) {
     }
   }
 
-  // let currentScope = scope;
-  // while (scope !== null) {
-  //   if (scope.nodeIndex === nodeIndex) {
-  //     return scope;
-  //   }
-
-  //   scope = scope.parent;
-  // }
-
   return null;
-}
-
-
-/*
-state {
-  nodeIndex: number;
-  edges: array;
-  labeled: boolean;
-  accepting: boolean;
-  if (accepting)
-    token: number;
-  else
-    offset: number;
-}
-
-
-state {
-  nodeIndex: number;
-  edges: array;
-};
-
-stateLabeled {
-  nodeIndex: number;
-  edges: array;
-};
-
-stateAccepting {
-  nodeIndex: number;
-  token: number;
-  edges: array;
-};
-
-stateAcceptingLabeled {
-  nodeIndex: number;
-  token: number;
-  edges: array;
-};
-
-edge {
-  instIndex: number;
-  alphabets: array;
-};
-
-edgeOffset {
-  instIndex: number;
-  offset: number;
-  alphabets: array;
-}
-
-edgeContinue {
-  nodeIndex: number;
-  alphabets: array;
-};
-
-*/
-
-function stringify(str) {
-  return JSON.stringify(str);
 }
 
 function traceScope(ctx, parentScope, nodeIndex) {
@@ -487,6 +412,8 @@ function traceScope(ctx, parentScope, nodeIndex) {
           } else if (alphaIndex === AlphabetReference.eof) {
             return "eof";
           }
+
+          assert(false, "Unreachable");
         })})\n`;
 
         currentScope = currentScope.parent;
@@ -501,4 +428,192 @@ function traceScope(ctx, parentScope, nodeIndex) {
 
   return str;
 }
+
+function findEofChain(ctx, scopeStart, scopeEnd) {
+  let currentScope = scopeStart;
+  while (true) {
+    if (currentScope === scopeEnd) {
+      return true;
+    }
+
+    switch (currentScope.tag) {
+      case DfaScope.Tag.top: {
+        return true;
+      }
+
+      case DfaScope.Tag.state: {
+        currentScope = currentScope.parent;
+        continue;
+      }
+
+      case DfaScope.Tag.edge: {
+        if (!currentScope.hasEof) {
+          return false;
+        }
+
+        currentScope = currentScope.parent;
+        continue;
+      }
+
+      default: {
+        assert(false, "Unreachable");
+      }
+    }
+  }
+}
+
+
+/*
+Probably should defer it till the IR is constructed
+right now we have no idea which edge is circular and
+what not.
+
+Or, make a hash-map to track them. Which does not look
+so appealing to be honest.
+*/
+
+// function findTrailingEofToken(ctx, nodeIndex) {
+//   assert(false, "WIP");
+
+//   let currentNodeIndex = nodeIndex;
+//   let lastTokenIndex = -1;
+//   while (true) {
+//     const node = ctx.getNode(nodeIndex);
+//     assert(node.tag === SubsetNode.Tag.state, `Expected state node, got ${node.tag}`);
+
+//     const entryIndex = node.data.data1;
+//     const extraIndex = node.data.data2;
+
+//     const edgeNodes = ctx.subset.unpackArray(extraIndex);
+//     const eofEntryIndex = findEofEdge(ctx, edgeNodes);
+//     if (eofEntryIndex === -1) {
+//       if (lastTokenIndex === -1) {
+
+//       }
+//     }
+//   }
+// }
+
+// function findEofEdge(ctx, edges) {
+//   assert(false, "WIP");
+
+//   for (const edgeIndex of edges) {
+//     const edge = ctx.getNode(edgeIndex);
+//     assert(edge.tag === SubsetNode.Tag.state, `Expected state node, got ${edge.tag}`);
+
+//     const entryIndex = edgeNode.data.data1;
+//     const alphaIndex = edgeNode.data.data2;
+
+//     if (alphaIndex === AlphabetReference.eof) {
+//       return entryIndex;
+//     }
+//   }
+
+//   return -1;
+// }
+
+// function recursiveEof(ctx, parentScope, reachableScope) {
+//   assert(false, "WIP");
+
+//   let nodeIndex = reachableScope.nodeIndex;
+//   outer: while (true) {
+//     const node = ctx.getNode(nodeIndex);
+
+//     const entryIndex = node.data.data1;
+//     const extraIndex = node.data.data2;
+//     const tokenIndex = ctx.subset.entries.at(entryIndex).found;
+
+//     const edgeNodes = ctx.subset.unpackArray(extraIndex);
+
+//     inner: for (const edgeIndex of edgeNodes) {
+//       const edgeNode = ctx.getNode(edgeIndex);
+
+//       const entryIndex = edgeNode.data.data1;
+//       const alphaIndex = edgeNode.data.data2;
+
+//       if (alphaIndex === AlphabetReference.eof) {
+//         nodeIndex  = ctx.subset.entries.at(entryIndex).node;
+//         continue outer;
+//       }
+//     }
+
+//     // reaches: if none of the edge is eof
+
+//     if (!ctx.subset.nfa.accepting.has(nodeIndex)) {
+//       assert(false, "something went wrong");
+//     }
+//     break outer;
+//   }
+// }
+
+
+/*
+  let currentScope = parentScope;
+  let lastStateScope = null;
+  loop: while (true) {
+    if (currentScope === reachableScope) {
+      return null;
+    }
+
+    switch (currentScope.tag) {
+      case DfaScope.Tag.top: {
+        assert(false, "temporary instant error");
+      }
+
+      case DfaScope.Tag.state: {
+        lastStateScope = currentScope;
+        currentScope = currentScope.parent;
+        continue loop;
+      }
+
+      case DfaScope.Tag.edge: {
+        if (currentScope.hasEof) {
+
+        }
+        currentScope = currentScope.parent;
+        continue loop;
+      }
+
+      default: {
+        assert(false, "Unreachable");
+      }
+    }
+  }
+*/
+
+
+
+
+
+
+
+
+/*
+
+let currentScope = scope;
+while (true) {
+  switch (currentScope.tag) {
+    case DfaScope.Tag.top: {
+      assert(false, "end");
+    }
+
+    case DfaScope.Tag.state: {
+      currentScope = currentScope.parent;
+      continue;
+    }
+
+    case DfaScope.Tag.edge: {
+      currentScope = currentScope.parent;
+      continue;
+    }
+
+    default: {
+      assert(false, "Unreachable");
+    }
+  }
+}
+
+*/
+
+
 

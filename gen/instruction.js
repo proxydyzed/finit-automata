@@ -24,14 +24,15 @@ export class Instruction {
     stateReachable   : 3,
     edge             : 4,
     edgeCircular     : 5,
-    edgeEof          : 6,
-    edgeFail         : 7,
-    edgeFailCircular : 8,
+    edgeFail         : 6,
+    edgeFailCircular : 7,
+    edgeEof          : 8,
+    edgeEofCircular  : 9,
   });
   static Ref = Object.freeze({
     __proto__: poisonPill,
-    stateEmpty       : 0,
-    edgeFailImplicit : 1,
+    edgeFailImplicit : 0,
+    edgeEofImplicit  : 1,
   });
   static Data = class Data {
     data1;

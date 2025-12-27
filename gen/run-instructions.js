@@ -103,68 +103,32 @@ export function runIr(subset, ir) {
 
   const instIndex = inst.data.data1;
 
-//   ctx.writer.writeAll(`\
-// export class Token {
-//   tag;
-//   start;
-//   end;
-
-//   constructor(tag, start, end) {
-//     this.tag = tag;
-//     this.start = start;
-//     this.end = end;
-//   }
-// };
-
-// export const Tag = Object.freeze({
-//   __proto__: null,
-//   ${Array.from(ctx.subset.tokens, ([, token], i) => `${token}: ${JSON.stringify(token)}`).join(",\n  ")}
-// });
-
-// `);
-
-//   ctx.writer.writeLine("export function next(lexer) {");
-//   ctx.writer.indent++;
-//   ctx.writer.writeLine("const source = lexer.source;");
-//   ctx.writer.writeLine("let lastIndex = lexer.index;");
-//   ctx.writer.writeLine("let tag;");
-  ctx.writer.writeLine("/*");
+  // boilerplate1(ctx);
+  // ctx.writer.writeLine("/*");
   run(ctx, instIndex, instIndex);
-  ctx.writer.writeLine("*/");
-  // ctx.writer.writeLine("return new Token(tag, lastIndex, lexer.index);");
-  // ctx.writer.indent--;
-  // ctx.writer.writeLine("}");
+  // ctx.writer.writeLine("*/");
+  // boilerplate2(ctx);
 
   return ctx.writer.string();
 }
 
-// function run2(ctx, entryIndex) {
-//   const { writer } = ctx;
-//   const jumpArray = [];
-//   let instIndex = entryIndex;
-
-//   while (true) {
-//     if (instIndex < InstructionRefOffset) {}
-//     switch ()
-//   }
-// }
-
 function run(ctx, instIndex, prevLabel) {
-  // assert(instIndex >= 0 && instIndex < ctx.ir.instructions.getSize(), "Out of bound instruction index");
   const { writer } = ctx;
   if (instIndex < InstructionRefOffset) {
     switch (instIndex) {
-      case Instruction.Ref.stateEmpty: {
-        writer.writeLine("// empty state");
-        break;
-      }
-
       case Instruction.Ref.edgeFailImplicit: {
-        writer.writeLine(`@edge(fail): @break(${prevLabel});`);
+        writer.writeLine(`@edge(fail): {}`);
         break;
       }
 
-      default: break;
+      case Instruction.Ref.edgeEofImplicit: {
+        writer.writeLine(`@edge(eof): {}`);
+        break;
+      }
+
+      default: {
+        assert(false, "Unreachable");
+      }
     }
 
     return;
@@ -186,23 +150,17 @@ function run(ctx, instIndex, prevLabel) {
       }
 
       if (stateData.edgesLength > 0) {
-        writer.writeLine(`@state(${instIndex}${stateData.reachable ? ", reachable" : ""}) {`);
+        if (stateData.reachable) {
+          writer.writeLine(`@state(${instIndex}) {`);
+        } else {
+          writer.writeLine(`@state(%) {`);
+        }
         writer.indent++;
 
-        // writer.writeLine("@match {");
-        // writer.indent++;
         for (const edgeIndex of ctx.ir.unpackArray(stateData.edges)) {
           run(ctx, edgeIndex, instIndex);
         }
-        // writer.indent--;
-        // writer.writeLine("}");
 
-        // if (stateData.reachable) {
-        //   // unnecessary if label is not reachable
-        //   writer.writeLine(`@break(${instIndex});`);
-        // }
-
-        // writer.writeLine("@unreachable;");
         writer.indent--;
         writer.writeLine("}");
       }
@@ -224,7 +182,7 @@ function run(ctx, instIndex, prevLabel) {
           return "eof";
         }
 
-        // unreachable
+        assert(false, "Unreachable");
       }).join(", ")}) {`);
 
       writer.indent++;
@@ -234,26 +192,27 @@ function run(ctx, instIndex, prevLabel) {
         writer.writeLine(`@continue(${nextInstIndex});`);
       } else {
         run(ctx, nextInstIndex, prevLabel);
-        writer.writeLine(`@break(${prevLabel});`);
+        // writer.writeLine(`@break(${prevLabel});`);
       }
       writer.indent--;
       writer.writeLine("}");
       break;
     }
 
-    case Instruction.Tag.edgeEof: {
+    case Instruction.Tag.edgeEofCircular:
+    case Instruction.Tag.edgeEof:
+    {
       const nextInstIndex = inst.data.data1;
-      if (nextInstIndex === -1) {
-        writer.writeLine(`@edge(eof) @break(${prevLabel});`);
+      writer.writeLine(`@edge(eof) {`);
+      writer.indent++;
+      if (inst.tag === Instruction.Tag.edgeEofCircular) {
+        writer.writeLine(`@continue(${nextInstIndex});`);
       } else {
-        writer.writeLine(`@edge(eof) {`);
-        writer.indent++;
         run(ctx, nextInstIndex, prevLabel);
-        writer.writeLine(`@break(${prevLabel});`);
-        writer.indent--;
-        writer.writeLine("}");
       }
 
+      writer.indent--;
+      writer.writeLine("}");
       break;
     }
 
@@ -267,10 +226,7 @@ function run(ctx, instIndex, prevLabel) {
       if (inst.tag === Instruction.Tag.edgeFailCircular) {
         writer.writeLine(`@continue(${nextInstIndex});`);
       } else {
-        if (nextInstIndex !== -1) {
-          run(ctx, nextInstIndex, prevLabel);
-        }
-        writer.writeLine(`@break(${prevLabel});`);
+        run(ctx, nextInstIndex, prevLabel);
       }
 
       writer.indent--;
@@ -278,23 +234,43 @@ function run(ctx, instIndex, prevLabel) {
       break;
     }
 
-    // case Instruction.Tag.edgeImplicit: {
-    //   switch (inst.data.data1) {
-    //     case AlphabetReference.fail: {
-    //       writer.writeLine(`@edge(fail): @break(${prevLabel});`);
-    //       break;
-    //     }
-
-    //     case AlphabetReference.eof: {
-    //       writer.writeLine(`@edge(eof): @break(${prevLabel});`);
-    //       break;
-    //     }
-    //   }
-    //   break;
-    // }
-
     default: {
       throw new Error(`Unexpected tag: %${inst.tag}`);
     }
   }
+}
+
+
+function boilerplate1(ctx) {
+  ctx.writer.writeAll(`\
+export class Token {
+  tag;
+  start;
+  end;
+
+  constructor(tag, start, end) {
+    this.tag = tag;
+    this.start = start;
+    this.end = end;
+  }
+};
+
+export const Tag = Object.freeze({
+  __proto__: null,
+  ${Array.from(ctx.subset.tokens, ([, token], i) => `${token}: ${JSON.stringify(token)}`).join(",\n  ")}
+});
+
+`);
+
+  ctx.writer.writeLine("export function next(lexer) {");
+  ctx.writer.indent++;
+  ctx.writer.writeLine("const source = lexer.source;");
+  ctx.writer.writeLine("let lastIndex = lexer.index;");
+  ctx.writer.writeLine("let tag;");
+}
+
+function boilerplate2(ctx) {
+  ctx.writer.writeLine("return new Token(tag, lastIndex, lexer.index);");
+  ctx.writer.indent--;
+  ctx.writer.writeLine("}");  
 }

@@ -28,7 +28,7 @@ const alphabetStart = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 const alphabetContinue = "abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
 try {
-  const { nfa, tokens } = constructNFA2();
+  const { nfa, tokens } = constructNFA();
   const subset = toSubset(nfa, tokens);
   const ir = generate(subset);
   const source = runIr(subset, ir);
@@ -38,29 +38,124 @@ try {
   console.error(error);
 }
 
-function _() {
-  switch (source[lexer.index]) {
-    case '.': {
-      lexer.index++;
-      tag = Tag.period;
-      switch (source[lexer.index]) {
-        case '.': {
-          switch (source[lexer.index + 1]) {
-            case '.': {
-              lexer.index += 2;
-              tag = Tag.period3;
-              break;
-            }
-          }
-          break;
-        }
-      }
-      break;
-    }
+function constructNFA() {
+  const builder = new NFABuilder(new NFA("start"));
+  // builder.addString("new", "keywordNew");
+  // builder.nfa.accepting.delete(buildString(builder.nfa, "%%();"));
+
+  builder.addEdges(" \n\r\t", StartState, StartState);
+
+  {
+    const stateIndex = builder.nfa.addVertex("eof");
+    builder.nfa.addEdge(AlphabetReference.eof, StartState, stateIndex);
+    builder.accept(stateIndex, "eof");
   }
+
+  {
+    const stateIndex = builder.nfa.addVertex("invalid");
+    builder.accept(stateIndex, "invalid");
+    builder.nfa.addEdge(AlphabetReference.fail, StartState, stateIndex);
+  }
+
+  builder.addString("+" , "plus");
+  builder.addString("-" , "minus");
+  builder.addString("*" , "asterisk");
+  builder.addString("/" , "slash");
+
+  builder.addString("(" , "lParen");
+  builder.addString(")" , "rParen");
+  builder.addString("{" , "lBrace");
+  builder.addString("}" , "rBrace");
+  builder.addString("[" , "lBracket");
+  builder.addString("]" , "rBracket");
+
+  builder.addString(":" , "colon");
+  builder.addString(";" , "semicolon");
+
+  builder.addString("?" , "question");
+  builder.addString("!" , "bang");
+
+  builder.addString("," , "comma");
+  builder.addString("." , "period");
+  builder.addString("..." , "period3");
+
+  builder.addString("=" , "equal");
+  builder.addString("==", "equalEqual");
+  builder.addString("!=", "bangEqual");
+  builder.addString("+=", "plusEqual");
+  builder.addString("-=", "minusEqual");
+  builder.addString("*=", "asteriskEqual");
+  builder.addString("/=", "slashEqual");
+
+  builder.addString("<" , "lAngle");
+  builder.addString(">" , "rAngle");
+  builder.addString("<=", "lAngleEqual");
+  builder.addString(">=", "rAngleEqual");
+  builder.addString("=>", "equalRAngle");
+
+  {
+    const stateIndex = builder.nfa.addVertex("number");
+    builder.addEdges("0123456789", StartState, stateIndex);
+    builder.addEdges("0123456789", stateIndex, stateIndex);
+    builder.accept(stateIndex, "number");
+  }
+
+  {
+    const stateIndex = builder.nfa.addVertex("identifier");
+    builder.addEdges("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ", StartState, stateIndex);
+    builder.addEdges("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", stateIndex, stateIndex);
+    builder.accept(stateIndex, "identifier");
+  }
+
+  {
+    const alphaIndex1 = builder.nfa.addAlpha("\"");
+    const alphaIndex2 = builder.nfa.addAlpha("\\");
+    const stateIndexA = StartState;
+    const stateIndexB = builder.nfa.addVertex("string-incomplete");
+    const stateIndexC = builder.nfa.addVertex("string");
+    const stateIndexD = builder.nfa.addVertex("string-invalid");
+    const stateIndexE = builder.nfa.addVertex("string-escape");
+    const stateIndexF = builder.nfa.addVertex("string-escape-invalid");
+    // starting '"'
+    builder.nfa.addEdge(alphaIndex1, stateIndexA, stateIndexB);
+    // ending '"'
+    builder.nfa.addEdge(alphaIndex1, stateIndexB, stateIndexC);
+    // escape'\\.'
+    //        ^^
+    builder.nfa.addEdge(alphaIndex2, stateIndexB, stateIndexE);
+    // escape char '\\.'
+    //                ^
+    builder.addEdges("\\nrtbf", stateIndexE, stateIndexB);
+    // any other character
+    builder.nfa.addEdge(AlphabetReference.fail, stateIndexB, stateIndexB);
+    builder.nfa.addEdge(AlphabetReference.fail, stateIndexE, stateIndexF);
+
+    builder.accept(stateIndexB, "incomplete_string");
+    builder.accept(stateIndexC, "string");
+    builder.accept(stateIndexD, "invalid_string");
+    builder.accept(stateIndexF, "invalid_string_escape");
+  }
+
+  {
+    const alphaIndex = builder.nfa.addAlpha("/");
+    const stateIndexA = StartState;
+    const stateIndexB = builder.nfa.addVertex("maybe-comment");
+    const stateIndexC = builder.nfa.addVertex("comment");
+    const stateIndexD = builder.nfa.addVertex("last-comment");
+    builder.nfa.addEdge(alphaIndex, stateIndexA, stateIndexB);
+    builder.nfa.addEdge(alphaIndex, stateIndexB, stateIndexC);
+    builder.nfa.addEdge(builder.nfa.addAlpha("\n"), stateIndexC, stateIndexA);
+    builder.nfa.addEdge(AlphabetReference.eof, stateIndexC, stateIndexA);
+    builder.nfa.addEdge(AlphabetReference.fail, stateIndexC, stateIndexC);
+    builder.accept(stateIndexD, "eof");
+  }
+
+  // builder.accept(StartState, "invalid");
+
+  return builder;
 }
 
-function constructNFA() {
+function constructNFA2() {
   const builder = new NFABuilder(new NFA("start"));
   // builder.addString("red", "RED1");
   // builder.addVertex("v1", stateIndex => {
@@ -169,121 +264,24 @@ function constructNFA() {
 //   return builder;
 }
 
-function constructNFA2() {
-  const builder = new NFABuilder(new NFA("start"));
-  // builder.addString("new", "keywordNew");
-
-  // builder.nfa.accepting.delete(buildString(builder.nfa, "%%();"));
-
-  builder.addEdges(" \n\r\t", StartState, StartState);
-
-  {
-    const stateIndex = builder.nfa.addVertex("eof");
-    builder.nfa.addEdge(AlphabetReference.eof, StartState, stateIndex);
-    builder.accept(stateIndex, "eof");
-  }
-  // builder.accept(StartState, "eof");
-
-  {
-    const stateIndex = builder.nfa.addVertex("invalid");
-    builder.accept(stateIndex, "invalid");
-    builder.nfa.addEdge(AlphabetReference.fail, StartState, stateIndex);
-  }
-
-  builder.addString("+" , "plus");
-  builder.addString("-" , "minus");
-  builder.addString("*" , "asterisk");
-  builder.addString("/" , "slash");
-
-  builder.addString("(" , "lParen");
-  builder.addString(")" , "rParen");
-  builder.addString("{" , "lBrace");
-  builder.addString("}" , "rBrace");
-  builder.addString("[" , "lBracket");
-  builder.addString("]" , "rBracket");
-
-  builder.addString(":" , "colon");
-  builder.addString(";" , "semicolon");
-
-  builder.addString("?" , "question");
-  builder.addString("!" , "bang");
-
-  builder.addString("," , "comma");
-  builder.addString("." , "period");
-  builder.addString("..." , "period3");
-
-  builder.addString("=" , "equal");
-  builder.addString("==", "equalEqual");
-  builder.addString("!=", "bangEqual");
-  builder.addString("+=", "plusEqual");
-  builder.addString("-=", "minusEqual");
-  builder.addString("*=", "asteriskEqual");
-  builder.addString("/=", "slashEqual");
-
-  builder.addString("<" , "lAngle");
-  builder.addString(">" , "rAngle");
-  builder.addString("<=", "lAngleEqual");
-  builder.addString(">=", "rAngleEqual");
-  builder.addString("=>", "equalRAngle");
-
-  {
-    const stateIndex = builder.nfa.addVertex("number");
-    builder.addEdges("0123456789", StartState, stateIndex);
-    builder.addEdges("0123456789", stateIndex, stateIndex);
-    builder.accept(stateIndex, "number");
-  }
-
-  {
-    const stateIndex = builder.nfa.addVertex("identifier");
-    builder.addEdges("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ", StartState, stateIndex);
-    builder.addEdges("abcdefghijklmnopqrstuvwxyz_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789", stateIndex, stateIndex);
-    builder.accept(stateIndex, "identifier");
-  }
-
-  {
-    const alphaIndex1 = builder.nfa.addAlpha("\"");
-    const alphaIndex2 = builder.nfa.addAlpha("\\");
-    const stateIndexA = StartState;
-    const stateIndexB = builder.nfa.addVertex("string-incomplete");
-    const stateIndexC = builder.nfa.addVertex("string");
-    const stateIndexD = builder.nfa.addVertex("string-invalid");
-    const stateIndexE = builder.nfa.addVertex("string-escape");
-    const stateIndexF = builder.nfa.addVertex("string-escape-invalid");
-    // starting '"'
-    builder.nfa.addEdge(alphaIndex1, stateIndexA, stateIndexB);
-    // ending '"'
-    builder.nfa.addEdge(alphaIndex1, stateIndexB, stateIndexC);
-    // escape'\\.'
-    //        ^^
-    builder.nfa.addEdge(alphaIndex2, stateIndexB, stateIndexE);
-    // escape char '\\.'
-    //                ^
-    builder.addEdges("\\nrtbf", stateIndexE, stateIndexB);
-    // any other character
-    builder.nfa.addEdge(AlphabetReference.fail, stateIndexB, stateIndexB);
-    builder.nfa.addEdge(AlphabetReference.fail, stateIndexE, stateIndexF);
-
-    builder.accept(stateIndexB, "incomplete_string");
-    builder.accept(stateIndexC, "string");
-    builder.accept(stateIndexD, "invalid_string");
-    builder.accept(stateIndexF, "invalid_string_escape");
-  }
-
-  {
-    const alphaIndex = builder.nfa.addAlpha("/");
-    const stateIndexA = StartState;
-    const stateIndexB = builder.nfa.addVertex("maybe-comment");
-    const stateIndexC = builder.nfa.addVertex("comment");
-    const stateIndexD = builder.nfa.addVertex("last-comment");
-    builder.nfa.addEdge(alphaIndex, stateIndexA, stateIndexB);
-    builder.nfa.addEdge(alphaIndex, stateIndexB, stateIndexC);
-    builder.nfa.addEdge(builder.nfa.addAlpha("\n"), stateIndexC, stateIndexA);
-    builder.nfa.addEdge(AlphabetReference.eof, stateIndexC, stateIndexD);
-    builder.nfa.addEdge(AlphabetReference.fail, stateIndexC, stateIndexC);
-    builder.accept(stateIndexD, "eof");
-  }
-
-  // builder.accept(StartState, "invalid");
-
-  return builder;
-}
+// function _() {
+//   switch (source[lexer.index]) {
+//     case '.': {
+//       lexer.index++;
+//       tag = Tag.period;
+//       switch (source[lexer.index]) {
+//         case '.': {
+//           switch (source[lexer.index + 1]) {
+//             case '.': {
+//               lexer.index += 2;
+//               tag = Tag.period3;
+//               break;
+//             }
+//           }
+//           break;
+//         }
+//       }
+//       break;
+//     }
+//   }
+// }
