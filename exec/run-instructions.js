@@ -14,6 +14,16 @@ import {
   InstructionRefOffset,
 } from "../gen/export.js";
 
+/*
+
+TASKS:
+
+TODO:
+walk the graph and figure out short circuit eofs
+allow seeking, source[index + x]
+
+*/
+
 class Context {
   subset;
   ir;

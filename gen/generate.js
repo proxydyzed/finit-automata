@@ -36,9 +36,9 @@ embed states within other states
 join circular references
 separate "eof" and "fail" references
 assert no "sigma" or "epsilon" edges remain
+assert every end is met with at least one token, `token !== undefined`
 
 TODO:
-make sure every end is met with at least one token, `token !== undefined`
 make seeking edges, `source[index + x]`
 make sentinel states, `.endsWith()`
 
