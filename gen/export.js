@@ -1,6 +1,6 @@
 export {
   generate,
-} from "./generate-dfa-instructions.js";
+} from "./generate.js";
 
 export {
   Instruction,
