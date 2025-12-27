@@ -21,7 +21,7 @@ import {
   InstructionList,
   InstructionRefOffset,
   CompilationContext,
-  SCDIR,
+  SemCompIR,
 } from "./instruction.js";
 
 import {
@@ -61,7 +61,7 @@ export function generate(subset) {
   });
 
   ctx.getInst(0).data.data1 = enterNode(ctx, scope, nodeIndex);
-  return new SCDIR(ctx.instructions, ctx.extra);
+  return new SemCompIR(ctx.instructions, ctx.extra);
 }
 
 function enterNode(ctx, parentScope, nodeIndex) {
@@ -92,10 +92,6 @@ function enterNode(ctx, parentScope, nodeIndex) {
     // way
 
     if (!hasToken) {
-      // console.log("empty");
-      // throw new Error(`Terminal states requires tokens`);
-      // return Instruction.Ref.stateEmpty;
-
       let currentScope = parentScope;
       loop: while (true) {
         switch (currentScope.tag) {
@@ -124,7 +120,6 @@ function enterNode(ctx, parentScope, nodeIndex) {
       }
     }
 
-    // console.log("zero-edges");
     return ctx.addStateInst({
       reachable: false,
       token: tokenIndex,
@@ -133,9 +128,7 @@ function enterNode(ctx, parentScope, nodeIndex) {
     });
   }
 
-  // console.log("many-edges");
   const instIndex = ctx.makeStateInst();
-  // assert(false, "WIP");
   const scope = DfaScope.State.from({
     parent: parentScope,
     nodeIndex: nodeIndex,
@@ -143,6 +136,7 @@ function enterNode(ctx, parentScope, nodeIndex) {
     reachable: false,
     accepting: hasToken,
   });
+
   const edges = enterEdges(ctx, scope, nodeIndex, edgeNodes);
   ctx.setStateInst(instIndex, {
     reachable: scope.reachable,
@@ -461,159 +455,3 @@ function findEofChain(ctx, scopeStart, scopeEnd) {
     }
   }
 }
-
-
-/*
-Probably should defer it till the IR is constructed
-right now we have no idea which edge is circular and
-what not.
-
-Or, make a hash-map to track them. Which does not look
-so appealing to be honest.
-*/
-
-// function findTrailingEofToken(ctx, nodeIndex) {
-//   assert(false, "WIP");
-
-//   let currentNodeIndex = nodeIndex;
-//   let lastTokenIndex = -1;
-//   while (true) {
-//     const node = ctx.getNode(nodeIndex);
-//     assert(node.tag === SubsetNode.Tag.state, `Expected state node, got ${node.tag}`);
-
-//     const entryIndex = node.data.data1;
-//     const extraIndex = node.data.data2;
-
-//     const edgeNodes = ctx.subset.unpackArray(extraIndex);
-//     const eofEntryIndex = findEofEdge(ctx, edgeNodes);
-//     if (eofEntryIndex === -1) {
-//       if (lastTokenIndex === -1) {
-
-//       }
-//     }
-//   }
-// }
-
-// function findEofEdge(ctx, edges) {
-//   assert(false, "WIP");
-
-//   for (const edgeIndex of edges) {
-//     const edge = ctx.getNode(edgeIndex);
-//     assert(edge.tag === SubsetNode.Tag.state, `Expected state node, got ${edge.tag}`);
-
-//     const entryIndex = edgeNode.data.data1;
-//     const alphaIndex = edgeNode.data.data2;
-
-//     if (alphaIndex === AlphabetReference.eof) {
-//       return entryIndex;
-//     }
-//   }
-
-//   return -1;
-// }
-
-// function recursiveEof(ctx, parentScope, reachableScope) {
-//   assert(false, "WIP");
-
-//   let nodeIndex = reachableScope.nodeIndex;
-//   outer: while (true) {
-//     const node = ctx.getNode(nodeIndex);
-
-//     const entryIndex = node.data.data1;
-//     const extraIndex = node.data.data2;
-//     const tokenIndex = ctx.subset.entries.at(entryIndex).found;
-
-//     const edgeNodes = ctx.subset.unpackArray(extraIndex);
-
-//     inner: for (const edgeIndex of edgeNodes) {
-//       const edgeNode = ctx.getNode(edgeIndex);
-
-//       const entryIndex = edgeNode.data.data1;
-//       const alphaIndex = edgeNode.data.data2;
-
-//       if (alphaIndex === AlphabetReference.eof) {
-//         nodeIndex  = ctx.subset.entries.at(entryIndex).node;
-//         continue outer;
-//       }
-//     }
-
-//     // reaches: if none of the edge is eof
-
-//     if (!ctx.subset.nfa.accepting.has(nodeIndex)) {
-//       assert(false, "something went wrong");
-//     }
-//     break outer;
-//   }
-// }
-
-
-/*
-  let currentScope = parentScope;
-  let lastStateScope = null;
-  loop: while (true) {
-    if (currentScope === reachableScope) {
-      return null;
-    }
-
-    switch (currentScope.tag) {
-      case DfaScope.Tag.top: {
-        assert(false, "temporary instant error");
-      }
-
-      case DfaScope.Tag.state: {
-        lastStateScope = currentScope;
-        currentScope = currentScope.parent;
-        continue loop;
-      }
-
-      case DfaScope.Tag.edge: {
-        if (currentScope.hasEof) {
-
-        }
-        currentScope = currentScope.parent;
-        continue loop;
-      }
-
-      default: {
-        assert(false, "Unreachable");
-      }
-    }
-  }
-*/
-
-
-
-
-
-
-
-
-/*
-
-let currentScope = scope;
-while (true) {
-  switch (currentScope.tag) {
-    case DfaScope.Tag.top: {
-      assert(false, "end");
-    }
-
-    case DfaScope.Tag.state: {
-      currentScope = currentScope.parent;
-      continue;
-    }
-
-    case DfaScope.Tag.edge: {
-      currentScope = currentScope.parent;
-      continue;
-    }
-
-    default: {
-      assert(false, "Unreachable");
-    }
-  }
-}
-
-*/
-
-
-
