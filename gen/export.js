@@ -3,5 +3,6 @@ export {
 } from "./generate-dfa-instructions.js";
 
 export {
-  runIr,
-} from "./run-instructions.js";
+  Instruction,
+  InstructionRefOffset,
+} from "./instruction.js";

@@ -7,15 +7,12 @@ import {
 import {
   IndentingWriter,
   assert,
-  // ArrayListLike,
-  // Uint32ArrayListLike,
-  // poisonPill,
 } from "../utils/export.js";
 
 import {
   Instruction,
   InstructionRefOffset,
-} from "./instruction.js";
+} from "../gen/export.js";
 
 class Context {
   subset;

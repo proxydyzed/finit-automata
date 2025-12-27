@@ -18,8 +18,11 @@ import {
 
 import {
   generate,
-  runIr,
 } from "./gen/export.js";
+
+import {
+  runIr,
+} from "./exec/export.js";
 
 import { join } from "node:path";
 import { writeFile } from "node:fs/promises";

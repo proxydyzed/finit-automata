@@ -272,64 +272,8 @@ export class CompilationContext {
   }
 };
 
-export class DfaScope {
-  #parent;
-  get parent() {return this.#parent;}
-  set parent(parent) {this.#parent = parent;}
-
-  nodeIndex;
-  instIndex;
-  reachable;
-  accepting;
-  constructor(parent, nodeIndex, instIndex, reachable, accepting) {
-    this.parent = parent;
-    this.nodeIndex = nodeIndex;
-    this.instIndex = instIndex;
-    this.reachable = reachable;
-    this.accepting = accepting;
-  }
-  static from(__inst__) {
-    if ("parent" in __inst__) {
-      if (typeof __inst__.parent !== "object") {
-        throw new Error(`Expected field "parent" to be "object", but got ${typeof __inst__.parent}`);
-      }
-    } else {
-      throw new Error(`Expected "parent" field`);
-    }
-    if ("nodeIndex" in __inst__) {
-      if (typeof __inst__.nodeIndex !== "number") {
-        throw new Error(`Expected field "nodeIndex" to be "number", but got ${typeof __inst__.nodeIndex}`);
-      }
-    } else {
-      throw new Error(`Expected "nodeIndex" field`);
-    }
-    if ("instIndex" in __inst__) {
-      if (typeof __inst__.instIndex !== "number") {
-        throw new Error(`Expected field "instIndex" to be "number", but got ${typeof __inst__.instIndex}`);
-      }
-    } else {
-      throw new Error(`Expected "instIndex" field`);
-    }
-    if ("reachable" in __inst__) {
-      if (typeof __inst__.reachable !== "boolean") {
-        throw new Error(`Expected field "reachable" to be "boolean", but got ${typeof __inst__.reachable}`);
-      }
-    } else {
-      throw new Error(`Expected "reachable" field`);
-    }
-    if ("accepting" in __inst__) {
-      if (typeof __inst__.accepting !== "boolean") {
-        throw new Error(`Expected field "accepting" to be "boolean", but got ${typeof __inst__.accepting}`);
-      }
-    } else {
-      throw new Error(`Expected "accepting" field`);
-    }
-    return new this(__inst__.parent, __inst__.nodeIndex, __inst__.instIndex, __inst__.reachable, __inst__.accepting);
-  }
-};
-
-// Semi Compiled Dfa Intermediate Representation
-export class SCDIR {
+// Semi Compiled Intermediate Representation
+export class SemCompIR {
   instructions;
   extra;
 
