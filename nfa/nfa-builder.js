@@ -1,8 +1,11 @@
 import {
+  whatType,
+} from "../utils/export.js";
+
+import {
   NFA,
   ErrorState,
   StartState,
-  whatType,
   AlphabetReference
 } from "./nfa.js";
 

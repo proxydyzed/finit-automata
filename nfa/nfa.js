@@ -1,3 +1,7 @@
+import {
+  whatType,
+} from "../utils/export.js";
+
 export const ErrorState = -1;
 export const StartState = 0;
 
@@ -100,16 +104,4 @@ export class NFA {
       mapping.set(alphaIndex, [stateIndexB]);
     }
   }
-}
-
-export function whatType(value) {
-  if (typeof value === "object") {
-    if (value === null) {
-      return "null";
-    }
-
-    return value.constructor?.name ?? "@unknown";
-  }
-
-  return typeof value;
 }

@@ -26,3 +26,7 @@ export {
 export {
   assert,
 } from "./assert-condition.js";
+
+export {
+  whatType,
+} from "./what-type.js";

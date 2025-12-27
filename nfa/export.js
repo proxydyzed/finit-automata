@@ -9,7 +9,6 @@ export {
   AlphabetOffset,
   alphaIndexIsRef,
   NFA,
-  whatType,
 } from "./nfa.js";
 
 export {
